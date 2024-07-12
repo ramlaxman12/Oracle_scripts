@@ -1,0 +1,231 @@
+
+
+###########    http://kerryosborne.oracle-guy.com/2008/09/sql-tuning-advisor/
+
+Tuning task created for a manually specified statement : 
+
+1- Create the Task from the advisor :
+
+DECLARE
+l_sql VARCHAR2(32000);
+l_sql_tune_task_id VARCHAR2(32000);
+BEGIN
+l_sql := ‘SELECT A.USER_ID, A.CONFIRMED_SALE, A.CURRENCY, A.ID
+FROM MY_CLIENT.ACCOUNT A
+WHERE A.SPONSOR_ID = 1360555
+AND A.TYPE_ID = 1
+‘;
+
+l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+sql_text => l_sql,
+— bind_list => sql_binds(anydata.ConvertNumber(10)),
+user_name => ‘MY_CLIENT’,
+scope => DBMS_SQLTUNE.scope_comprehensive,
+time_limit => 60,
+task_name => ‘account_task_4’,
+description => ‘Tuning task for an account.’);
+DBMS_OUTPUT.put_line(‘l_sql_tune_task_id: ‘ || l_sql_tune_task_id);
+END;
+/
+
+2- Verify the creation of the task :
+
+
+
+ 
+Tuning task created for a manually specified statement : 
+
+1- Create the Task from the advisor :
+
+DECLARE
+l_sql VARCHAR2(32000);
+l_sql_tune_task_id VARCHAR2(32000);
+BEGIN
+l_sql := ‘SELECT A.USER_ID, A.CONFIRMED_SALE, A.CURRENCY, A.ID
+FROM MY_CLIENT.ACCOUNT A
+WHERE A.SPONSOR_ID = 1360555
+AND A.TYPE_ID = 1
+‘;
+
+l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+sql_text => l_sql,
+— bind_list => sql_binds(anydata.ConvertNumber(10)),
+user_name => ‘MY_CLIENT’,
+scope => DBMS_SQLTUNE.scope_comprehensive,
+time_limit => 60,
+task_name => ‘account_task_4’,
+description => ‘Tuning task for an account.’);
+DBMS_OUTPUT.put_line(‘l_sql_tune_task_id: ‘ || l_sql_tune_task_id);
+END;
+/
+
+2- Verify the creation of the task :
+
+
+
+ 
+Tuning task created for a manually specified statement : 
+
+1- Create the Task from the advisor :
+
+DECLARE
+l_sql VARCHAR2(32000);
+l_sql_tune_task_id VARCHAR2(32000);
+BEGIN
+l_sql := ‘SELECT A.USER_ID, A.CONFIRMED_SALE, A.CURRENCY, A.ID
+FROM MY_CLIENT.ACCOUNT A
+WHERE A.SPONSOR_ID = 1360555
+AND A.TYPE_ID = 1
+‘;
+
+l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+sql_text => l_sql,
+— bind_list => sql_binds(anydata.ConvertNumber(10)),
+user_name => ‘MY_CLIENT’,
+scope => DBMS_SQLTUNE.scope_comprehensive,
+time_limit => 60,
+task_name => ‘account_task_4’,
+description => ‘Tuning task for an account.’);
+DBMS_OUTPUT.put_line(‘l_sql_tune_task_id: ‘ || l_sql_tune_task_id);
+END;
+/
+
+2- Verify the creation of the task :
+
+
+
+ 
+Tuning task created for a manually specified statement : 
+
+1- Create the Task from the advisor :
+
+DECLARE
+l_sql VARCHAR2(32000);
+l_sql_tune_task_id VARCHAR2(32000);
+BEGIN
+l_sql := ‘SELECT A.USER_ID, A.CONFIRMED_SALE, A.CURRENCY, A.ID
+FROM MY_CLIENT.ACCOUNT A
+WHERE A.SPONSOR_ID = 1360555
+AND A.TYPE_ID = 1
+‘;
+
+l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+sql_text => l_sql,
+— bind_list => sql_binds(anydata.ConvertNumber(10)),
+user_name => ‘MY_CLIENT’,
+scope => DBMS_SQLTUNE.scope_comprehensive,
+time_limit => 60,
+task_name => ‘account_task_4’,
+description => ‘Tuning task for an account.’);
+DBMS_OUTPUT.put_line(‘l_sql_tune_task_id: ‘ || l_sql_tune_task_id);
+END;
+/
+
+2- Verify the creation of the task :
+
+
+
+ 
+Tuning task created for a manually specified statement : 
+
+1- Create the Task from the advisor :
+
+DECLARE
+l_sql VARCHAR2(32000);
+l_sql_tune_task_id VARCHAR2(32000);
+BEGIN
+l_sql := ‘SELECT A.USER_ID, A.CONFIRMED_SALE, A.CURRENCY, A.ID
+FROM MY_CLIENT.ACCOUNT A
+WHERE A.SPONSOR_ID = 1360555
+AND A.TYPE_ID = 1
+‘;
+
+l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+sql_text => l_sql,
+— bind_list => sql_binds(anydata.ConvertNumber(10)),
+user_name => ‘MY_CLIENT’,
+scope => DBMS_SQLTUNE.scope_comprehensive,
+time_limit => 60,
+task_name => ‘account_task_4’,
+description => ‘Tuning task for an account.’);
+DBMS_OUTPUT.put_line(‘l_sql_tune_task_id: ‘ || l_sql_tune_task_id);
+END;
+/
+
+2- Verify the creation of the task :
+
+SELECT task_name, status FROM dba_advisor_log WHERE owner = ‘WISSEM’ ;
+
+3- Execute the task from the advisor :
+
+BEGIN
+DBMS_SQLTUNE.execute_tuning_task(task_name => ‘account_task_4’);
+END;
+/
+
+
+4- Get the recommendations from the advisor :
+
+SELECT DBMS_SQLTUNE.report_tuning_task(‘account_task_4’) AS recommendations FROM dual;
+
+
+SELECT task_name, status FROM dba_advisor_log WHERE owner = ‘WISSEM’ ;
+
+3- Execute the task from the advisor :
+
+BEGIN
+DBMS_SQLTUNE.execute_tuning_task(task_name => ‘account_task_4’);
+END;
+/
+
+
+4- Get the recommendations from the advisor :
+
+SELECT DBMS_SQLTUNE.report_tuning_task(‘account_task_4’) AS recommendations FROM dual;
+
+Happy Tunning!
+SELECT task_name, status FROM dba_advisor_log WHERE owner = ‘WISSEM’ ;
+
+3- Execute the task from the advisor :
+
+BEGIN
+DBMS_SQLTUNE.execute_tuning_task(task_name => ‘account_task_4’);
+END;
+/
+
+
+4- Get the recommendations from the advisor :
+
+SELECT DBMS_SQLTUNE.report_tuning_task(‘account_task_4’) AS recommendations FROM dual;
+
+Happy Tunning!
+SELECT task_name, status FROM dba_advisor_log WHERE owner = ‘WISSEM’ ;
+
+3- Execute the task from the advisor :
+
+BEGIN
+DBMS_SQLTUNE.execute_tuning_task(task_name => ‘account_task_4’);
+END;
+/
+
+
+4- Get the recommendations from the advisor :
+
+SELECT DBMS_SQLTUNE.report_tuning_task(‘account_task_4’) AS recommendations FROM dual;
+
+Happy Tunning!
+SELECT task_name, status FROM dba_advisor_log WHERE owner = ‘WISSEM’ ;
+
+3- Execute the task from the advisor :
+
+BEGIN
+DBMS_SQLTUNE.execute_tuning_task(task_name => ‘account_task_4’);
+END;
+/
+
+
+4- Get the recommendations from the advisor :
+
+SELECT DBMS_SQLTUNE.report_tuning_task(‘account_task_4’) AS recommendations FROM dual;
+
+Happy Tunning!

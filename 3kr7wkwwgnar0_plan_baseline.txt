@@ -1,0 +1,483 @@
+
+/*+ LEADING(e2 e1) USE_NL(e1) INDEX(e1 emp_emp_id_pk) USE_MERGE(j) FULL(j) */
+
+ /*+USE_HASH(rt t1) */
+
+
+col begin_interval_time for a30
+break on plan_hash_value on startup_time skip 1
+select ss.snap_id, ss.instance_number node, begin_interval_time, s.sql_id, s.plan_hash_value,
+nvl(executions_delta,0) execs,
+(elapsed_time_delta/decode(nvl(executions_delta,0),0,1,executions_delta))/1000000 avg_etime,
+(buffer_gets_delta/decode(nvl(buffer_gets_delta,0),0,1,executions_delta)) avg_lio, version_count
+from DBA_HIST_SQLSTAT S, DBA_HIST_SNAPSHOT SS
+where s.sql_id = nvl('&sql_id','4dqs2k5tynk61')
+and ss.snap_id = S.snap_id
+and ss.instance_number = S.instance_number
+and executions_delta > 0 --and plan_hash_value=3099046451
+order by 1, 2, 3
+/
+
+select sql_text, sql_fulltext, executions, elapsed_time/1000000 seconds
+from gv$sql where sql_id='&SQL_ID'
+order by executions desc;
+
+
+
+var sqlid varchar2(30);
+exec :sqlid := trim('&sqlid_in');
+select stat.snap_id,
+       to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI') as snap_start_time,
+       stat.plan_hash_value as plan_hash,
+       stat.optimizer_mode as optimizer,
+       sum(stat.executions_delta) as execs_dlt,
+       sum(elapsed_time_delta / 1000000.0) as elap_dlt
+      from dba_hist_sqlstat stat, dba_hist_sqltext text, dba_hist_snapshot dhs
+where stat.sql_id = text.sql_id
+      and stat.dbid   = text.dbid
+      and stat.dbid = dhs.dbid
+      and stat.snap_id = dhs.snap_id
+      and stat.instance_number = dhs.instance_number
+      and stat.sql_id = :sqlid
+group by stat.snap_id, to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI'), stat.plan_hash_value, stat.optimizer_mode, to_char(substr(text.sql_text, regexp_instr(text.sql_text,'<',1)+1,(regexp_instr(text.sql_text,'>',1)-regexp_instr(text.sql_text,'<',1)-1)))
+order by stat.snap_id, to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI');
+
+#####################
+
+select /*+ LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp0_) INDEX(filetblimp0_ FILE_TBL_SS2) */ filetblimp0_.fil_id as fil_id, filetblimp0_.
+fil_version_id as fil_ver_2_, filetblimp0_.system_generated_fl as system__3_,
+filetblimp0_.fil_delete_fl as fil_del_4_, filetblimp0_.ptn_id as ptn_id, filetblimp0_.tok_id as tok_id, filetblimp0_.mac_id as mac_id,
+filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp0_.fil_filename as fil_fil_9_, filetblimp0_.fil_length as fil_length,
+filetblimp0_.fil_sequence_no as fil_se_11_,filetblimp0_.fil_sequence_no_int as fil_se_12_,filetblimp0_.fil_records as fil_re_13_, 
+filetblimp0_.fil_unique_key as fil_un_14_, filetblimp0_.fil_hash_value as fil_ha_15_,filetblimp0_.fil_duplicate_fl as fil_du_16_,
+filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl filetblimp0_ where (filetblimp0_.fil_hash_value='C07A9B649D866FE0AA9FF474A6D1EE5E'  )
+and(exists(select collectedf1_.clf_id from collected_file collectedf1_ where (collectedf1_.fil_id=filetblimp0_.fil_id )
+and(collectedf1_.fcn_id=39))) order by  filetblimp0_.fil_id asc;
+
+
+select  filetblimp0_.fil_id as fil_id, filetblimp0_.fil_version_id as fil_ver_2_, 
+filetblimp0_.system_generated_fl as system__3_,filetblimp0_.fil_delete_fl as fil_del_4_, 
+filetblimp0_.ptn_id as ptn_id, filetblimp0_.tok_id as tok_id, filetblimp0_.mac_id as mac_id,
+filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp0_.fil_filename as fil_fil_9_, 
+filetblimp0_.fil_length as fil_length, filetblimp0_.fil_sequence_no as fil_se_11_,
+filetblimp0_.fil_sequence_no_int as fil_se_12_, filetblimp0_.fil_records as fil_re_13_, 
+filetblimp0_.fil_unique_key as fil_un_14_, filetblimp0_.fil_hash_value as fil_ha_15_,
+filetblimp0_.fil_duplicate_fl as fil_du_16_, filetblimp0_.fil_duplicate_file_link as fil_du_17_ 
+from file_tbl filetblimp0_ where (filetblimp0_.fil_hash_value='C07A9B649D866FE0AA9FF474A6D1EE5E'  )and(exists(select
+collectedf1_.clf_id from collected_file collectedf1_ where (collectedf1_.fil_id=filetblimp0_.fil_id )
+and(collectedf1_.fcn_id=39 ))) order by  filetblimp0_.fil_id asc;
+
+
+
+alter session set optimizer_capture_sql_plan_baselines = true;
+
+
+SELECT id, parent_id, LPAD (' ', LEVEL - 1) || operation || ' ' ||
+options operation, object_name
+FROM (
+SELECT id, parent_id, operation, options, object_name
+FROM v$sql_plan
+WHERE address = '&address'
+  2    3    4    5    6    7  AND hash_value = &hash_value
+  8  AND child_number = &child_number
+)
+################################# manual loading to baseline  #######################################
+
+DECLARE
+  l_plans_loaded  PLS_INTEGER;
+BEGIN
+  l_plans_loaded := DBMS_SPM.load_plans_from_cursor_cache(
+    sql_id => '&1fkh93md0802n');
+END;
+/
+
+SELECT sql_handle, plan_name
+FROM dba_sql_plan_baselines
+WHERE signature IN (
+SELECT exact_matching_signature FROM v$sql WHERE sql_id=’&SQL_ID’)
+)
+
+declare 
+v_dropedbaseline number;
+begin
+v_dropedbaseline :=DBMS_SPM.drop_sql_plan_baseline(
+sql_handle =>'&handel');
+end;
+/
+
+
+select * from table(dbms_xplan.display_cursor('&SQL_ID'));
+
+select * from table(dbms_xplan.display_awr('&SQL_ID'));
+
+
+
+12:33:29 SQL> select SQL_ID,PLAN_HASH_VALUE,SQL_FULLTEXT from v$sql where SQL_FULLTEXT like '%LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp0_)
+ INDEX(filetblimp0_ FILE_TBL_SS2) */ filetblimp0_.fil_id as fil_id%';
+fwsdsu4y050q5      1265299069 explain plan for select /*+ LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp
+                              0_) INDEX(filetblimp0_ FILE_TBL_SS2) */ filetblimp0_.fil_id as fil_id, filetblim
+                              p0_.fil_version_id as fil_ver_2_, filetblimp0_.system_generated_fl as system__3_
+                              ,
+                              filetblimp0_.fil_delete_fl as fil_del_4_, filetblimp0_.ptn_id as ptn_id, filetbl
+                              imp0_.tok_id as tok_id, filetblimp0_.mac_id as mac_id,
+                              filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp0_.fil_filename as fil_f
+                              il_9_, filetblimp0_.fil_length as fil_length,
+                              filetblimp0_.fil_sequence_no as fil_se_11_,filetblimp0_.fil_sequence_no_int as f
+                              il_se_12_,filetblimp0_.fil_records as fil_re_13_,
+                              filetblimp0_.fil_unique_key as fil_un_14_, filetblimp0_.fil_hash_value as fil_ha
+                              _15_,filetblimp0_.fil_duplicate_fl as fil_du_16_,
+                              filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl filetblimp0_ wh
+                              ere (filetblimp0_.fil_hash_value='EBB01DEA562FC9CB47229A8E2BAA1D0C'  )
+                              and(exists(select collectedf1_.clf_id from collected_file collectedf1_ where (co
+                              llectedf1_.fil_id=filetblimp0_.fil_id )
+                              and(collectedf1_.fcn_id=317))) order by  filetblimp0_.fil_id asc
+
+7xk5m09a6apq8      3924418374 select SQL_ID,PLAN_HASH_VALUE,SQL_FULLTEXT from v$sql where SQL_FULLTEXT like '/
+                              *+ LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp0_) INDEX(filetblimp0_ FI
+                              LE_TBL_SS2) */ filetblimp0_.fil_id as fil_id%'
+
+6pr4jaw0szf8m      3924418374 select SQL_ID,PLAN_HASH_VALUE,SQL_FULLTEXT from v$sql where SQL_FULLTEXT like '%
+                              LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp0_) INDEX(filetblimp0_ FILE_
+                              TBL_SS2) */ filetblimp0_.fil_id as fil_id%'
+
+1tbsbkktmgxax      1265299069 select /*+ LEADING(filetblimp0_ collectedf1_) use_nl(filetblimp0_) INDEX(filetbl
+                              imp0_ FILE_TBL_SS2) */ filetblimp0_.fil_id as fil_id, filetblimp0_.fil_version_i
+                              d as fil_ver_2_, filetblimp0_.system_generated_fl as system__3_,
+                              filetblimp0_.fil_delete_fl as fil_del_4_, filetblimp0_.ptn_id as ptn_id, filetbl
+                              imp0_.tok_id as tok_id, filetblimp0_.mac_id as mac_id,
+                              filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp0_.fil_filename as fil_f
+                              il_9_, filetblimp0_.fil_length as fil_length,
+                              filetblimp0_.fil_sequence_no as fil_se_11_,filetblimp0_.fil_sequence_no_int as f
+                              il_se_12_,filetblimp0_.fil_records as fil_re_13_,
+                              filetblimp0_.fil_unique_key as fil_un_14_, filetblimp0_.fil_hash_value as fil_ha
+                              _15_,filetblimp0_.fil_duplicate_fl as fil_du_16_,
+                              filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl filetblimp0_ wh
+                              ere (filetblimp0_.fil_hash_value='EBB01DEA562FC9CB47229A8E2BAA1D0C'  )
+                              and(exists(select collectedf1_.clf_id from collected_file collectedf1_ where (co
+                              llectedf1_.fil_id=filetblimp0_.fil_id )
+                              and(collectedf1_.fcn_id=317))) order by  filetblimp0_.fil_id asc
+
+SQL> select NAME,POSITION,VALUE_STRING from  v$sql_bind_capture where SQL_ID='&3kr7wkwwgnar0';
+:1                                                                                                1        EBB01DEA562FC9CB47229A8E2BAA1D0C
+
+:2                                                                                                2             317
+
+:1                                                                                                1          C452B106D3B60E03F21292F59836CE8B
+
+:2                                                                                                                                2
+181
+
+:1                                                                                                                                1
+F5AC7659ED22EB0C0AFC0178837B7CF9
+
+:2                                                                                                                                2
+157
+
+
+SELECT sql_id, NAME,DATATYPE_STRING,VALUE_STRING
+FROM DBA_HIST_SQLBIND WHERE SQL_ID='&7a73kdgy0q1c2' 
+
+6 rows selected.
+
+
+----------------------BASELINE---------------
+
+12:49:07 SQL> select sql_handle,sql_text,plan_name,CREATED from DBA_SQL_PLAN_BASELINES;
+SQL_7a3487efd04e836f           select filetblimp0_.fil_id as fil_id, filetblimp0_.fil_version_id as fil_ver_2_, SQL_PLAN_7nd47xz84x0vg2955d9f8
+                                filetblimp0_.system_generated_fl as system__3_, filetblimp0_.fil_delete_fl as f
+                               il_del_4_, filetblimp0_.ptn_id as ptn_id, filetblimp0_.tok_id as tok_id, filetbl
+                               imp0_.mac_id as mac_id, filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp
+                               0_.fil_filename as fil_fil_9_, filetblimp0_.fil_length as fil_length, filetblimp
+                               0_.fil_sequence_no as fil_se_11_, filetblimp0_.fil_sequence_no_int as fil_se_12_
+                               , filetblimp0_.fil_records as fil_re_13_, filetblimp0_.fil_unique_key as fil_un_
+                               14_, filetblimp0_.fil_hash_value as fil_ha_15_, filetblimp0_.fil_duplicate_fl as
+                                fil_du_16_, filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl fi
+                               letblimp0_ where (filetblimp0_.fil_hash_value=:1  )and(exists(select collectedf1
+                               _.clf_id from collected_file collectedf1_ where (collectedf1_.fil_id=filetblimp0
+                               _.fil_id )and(collectedf1_.fcn_id=:2  ))) order by  filetblimp0_.fil_id asc
+02-FEB-16 12.48.17.000000 PM
+
+SQL_7a3487efd04e836f           select filetblimp0_.fil_id as fil_id, filetblimp0_.fil_version_id as fil_ver_2_, SQL_PLAN_7nd47xz84x0vgfffe5969
+                                filetblimp0_.system_generated_fl as system__3_, filetblimp0_.fil_delete_fl as f
+                               il_del_4_, filetblimp0_.ptn_id as ptn_id, filetblimp0_.tok_id as tok_id, filetbl
+                               imp0_.mac_id as mac_id, filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp
+                               0_.fil_filename as fil_fil_9_, filetblimp0_.fil_length as fil_length, filetblimp
+                               0_.fil_sequence_no as fil_se_11_, filetblimp0_.fil_sequence_no_int as fil_se_12_
+                               , filetblimp0_.fil_records as fil_re_13_, filetblimp0_.fil_unique_key as fil_un_
+                               14_, filetblimp0_.fil_hash_value as fil_ha_15_, filetblimp0_.fil_duplicate_fl as
+                                fil_du_16_, filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl fi
+                               letblimp0_ where (filetblimp0_.fil_hash_value=:1  )and(exists(select collectedf1
+                               _.clf_id from collected_file collectedf1_ where (collectedf1_.fil_id=filetblimp0
+                               _.fil_id )and(collectedf1_.fcn_id=:2  ))) order by  filetblimp0_.fil_id asc
+02-FEB-16 12.48.17.000000 PM
+
+
+
+SET SERVEROUTPUT ON
+DECLARE
+l_plans_loaded  PLS_INTEGER;
+BEGIN
+l_plans_loaded := DBMS_SPM.load_plans_from_cursor_cache(
+sql_id => '&sql_id',
+plan_hash_value => '&plan_hash_value',
+sql_handle => '&handle');
+DBMS_OUTPUT.put_line('Plans Loaded: ' || l_plans_loaded);
+END;
+/
+
+12:53:51 SQL> set time off timing off
+SQL> SET SERVEROUTPUT ON
+DECLARE
+l_plans_loaded  PLS_INTEGER;
+BEGIN
+l_plans_loaded := DBMS_SPM.load_plans_from_cursor_cache(
+sql_id => '&sql_id',
+SQL>   2    3    4    5    6  plan_hash_value => '&plan_hash_value',
+sql_handle => '&handle');
+DBMS_OUTPUT.put_line('Plans Loaded: ' || l_plans_loaded);
+END;
+/  7    8    9   10
+Enter value for sql_id: 1tbsbkktmgxax
+old   5: sql_id => '&sql_id',
+new   5: sql_id => '1tbsbkktmgxax',
+Enter value for plan_hash_value: 1265299069
+old   6: plan_hash_value => '&plan_hash_value',
+new   6: plan_hash_value => '1265299069',
+Enter value for handle: SQL_7a3487efd04e836f
+old   7: sql_handle => '&handle');
+new   7: sql_handle => 'SQL_7a3487efd04e836f');
+Plans Loaded: 1
+
+PL/SQL procedure successfully completed.
+
+SQL>
+SQL>
+
+select distinct p.name sql_profile_name,s.sql_id from dba_sql_profiles p,DBA_HIST_SQLSTAT s where p.name=s.sql_profile;
+
+
+SQL> select sql_handle, plan_name, CREATED from DBA_SQL_PLAN_BASELINES where sql_handle='&SQL_7a3487efd04e836f';
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vg2955d9f8 02-FEB-16 12.48.17.000000 PM
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vge64f5c63 02-FEB-16 12.54.41.000000 PM
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vgfffe5969 02-FEB-16 12.48.17.000000 PM
+var pbsts varchar2(30);
+exec :pbsts := dbms_spm.alter_sql_plan_baseline('SQL_7a3487efd04e836f','SQL_PLAN_7nd47xz84x0vgc005f0d5','enabled','YES');
+
+PL/SQL procedure successfully completed.
+
+SQL> select sql_handle, plan_name, CREATED,ENABLED,ACCEPTED from DBA_SQL_PLAN_BASELINES where sql_handle='&SQL_7a3487efd04e836f';
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vg2955d9f8 02-FEB-16 12.48.17.000000 PM                                                NO  YES
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vge64f5c63 02-FEB-16 12.54.41.000000 PM                                                YES YES
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vgfffe5969 02-FEB-16 12.48.17.000000 PM                                                YES YES
+
+SQL> var pbsts varchar2(30);
+SQL>  exec :pbsts := dbms_spm.alter_sql_plan_baseline('SQL_7a3487efd04e836f','SQL_PLAN_7nd47xz84x0vgfffe5969','enabled','NO');
+
+PL/SQL procedure successfully completed.
+
+SQL> select sql_handle, plan_name, CREATED,ENABLED,ACCEPTED from DBA_SQL_PLAN_BASELINES where sql_handle='SQL_7a3487efd04e836f';
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vg2955d9f8 02-FEB-16 12.48.17.000000 PM                                                NO  YES
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vge64f5c63 02-FEB-16 12.54.41.000000 PM                                                YES YES
+SQL_7a3487efd04e836f           SQL_PLAN_7nd47xz84x0vgfffe5969 02-FEB-16 12.48.17.000000 PM                                                NO  YES
+
+SQL> select SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'^C
+
+SQL>
+SQL> SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'&SQL_PLAN_7nd47xz84x0vge64f5c63');
+SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'SQL_PLAN_7nd47xz84x0vge64f5c63')
+                                                                                                      *
+ERROR at line 1:
+ORA-00907: missing right parenthesis
+
+
+SQL> SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'&SQL_PLAN_7nd47xz84x0vge64f5c63'));
+
+--------------------------------------------------------------------------------
+SQL handle: SQL_7a3487efd04e836f
+SQL text: select filetblimp0_.fil_id as fil_id, filetblimp0_.fil_version_id as
+          fil_ver_2_, filetblimp0_.system_generated_fl as system__3_,
+          filetblimp0_.fil_delete_fl as fil_del_4_, filetblimp0_.ptn_id as
+          ptn_id, filetblimp0_.tok_id as tok_id, filetblimp0_.mac_id as mac_id,
+          filetblimp0_.fil_relative_path as fil_rel_8_, filetblimp0_.fil_filename
+          as fil_fil_9_, filetblimp0_.fil_length as fil_length,
+          filetblimp0_.fil_sequence_no as fil_se_11_,
+          filetblimp0_.fil_sequence_no_int as fil_se_12_,
+          filetblimp0_.fil_records as fil_re_13_, filetblimp0_.fil_unique_key as
+          fil_un_14_, filetblimp0_.fil_hash_value as fil_ha_15_,
+          filetblimp0_.fil_duplicate_fl as fil_du_16_,
+          filetblimp0_.fil_duplicate_file_link as fil_du_17_ from file_tbl
+          filetblimp0_ where (filetblimp0_.fil_hash_value=:1  )and(exists(select
+          collectedf1_.clf_id from collected_file collectedf1_ where
+          (collectedf1_.fil_id=filetblimp0_.fil_id )and(collectedf1_.fcn_id=:2
+          ))) order by  filetblimp0_.fil_id asc
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Plan name: SQL_PLAN_7nd47xz84x0vge64f5c63         Plan id: 3863960675
+Enabled: YES     Fixed: NO      Accepted: YES     Origin: MANUAL-LOAD
+--------------------------------------------------------------------------------
+
+Plan hash value: 1265299069
+
+----------------------------------------------------------------------------------------------------
+| Id  | Operation                     | Name               | Rows  | Bytes | Cost (%CPU)| Time     |
+----------------------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT              |                    |     1 |   110 |     9  (12)| 00:00:01 |
+|   1 |  SORT ORDER BY                |                    |     1 |   110 |     9  (12)| 00:00:01 |
+|   2 |   NESTED LOOPS SEMI           |                    |     1 |   110 |     8   (0)| 00:00:01 |
+|   3 |    TABLE ACCESS BY INDEX ROWID| FILE_TBL           |     1 |   100 |     5   (0)| 00:00:01 |
+|*  4 |     INDEX RANGE SCAN          | FILE_TBL_SS2       |     1 |       |     3   (0)| 00:00:01 |
+|*  5 |    TABLE ACCESS BY INDEX ROWID| COLLECTED_FILE     | 72881 |   711K|     3   (0)| 00:00:01 |
+|*  6 |     INDEX RANGE SCAN          | COLLECTED_FILE_SS2 |     1 |       |     2   (0)| 00:00:01 |
+----------------------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   4 - access("FILETBLIMP0_"."FIL_HASH_VALUE"=:1)
+   5 - filter("COLLECTEDF1_"."FCN_ID"=TO_NUMBER(:2))
+   6 - access("COLLECTEDF1_"."FIL_ID"="FILETBLIMP0_"."FIL_ID")
+
+46 rows selected.
+
+SQL>
+
+
+
++++++++++++++++++++++++++++++++++  baseline export and import +++++++++++++++++++++++++++++++++++++++++++=
+
+
+
+
+Oracle Database supports the export and import of SQL plan baselines using its import and export utilities or Oracle Data Pump. Use the DBMS_SPM 
+package to define a staging table, which is then used to pack and unpack SQL plan baselines.
+
+To import a set of SQL plan baselines from one system to another:
+
+On the original system, create a staging table using the CREATE_STGTAB_BASELINE procedure:
+
+
+BEGIN
+exec DBMS_SPM.CREATE_STGTAB_BASELINE(table_name => ‘rambase’);
+END;
+/
+
+
+BEGIN
+  DBMS_SPM.CREATE_STGTAB_BASELINE(
+    table_name      => 'BAS_TAB',
+    table_owner     => 'ROCRA_REF',
+    tablespace_name => 'TS_ROCRAREF_DAT01');
+END;
+/
+
+This example creates a staging table named stage1.
+
+Pack the SQL plan baselines you want to export from the SQL management base into the staging table using the PACK_STGTAB_BASELINE function:
+
+DECLARE
+my_plans number;
+BEGIN
+my_plans := DBMS_SPM.PACK_STGTAB_BASELINE(
+table_name =>BAS_TAB,
+enabled => ‘yes’,
+creator => ‘ROCRA_REF’);
+END;
+/
+
+
+SET SERVEROUTPUT ON
+DECLARE
+  l_plans_packed  PLS_INTEGER;
+BEGIN
+  l_plans_packed := DBMS_SPM.pack_stgtab_baseline(
+    table_name      => 'SQL_BASELINE_TAB',
+    table_owner     => 'ROCRA_REF');
+END;
+/
+
+This example packs all enabled plan baselines created by user dba1 into the staging table stage1. 
+You can select SQL plan baselines using the plan name (plan_name), SQL handle (sql_handle), or by any other plan criteria. The table_name parameter is mandatory.
+1.Export the staging table stage1 into a flat file using the export command or Oracle Data Pump. –>Exp system/orapw4db 
+ tables=STAGE1 file==stage1_baseline.dmp log=exp_basline.log
+2.Transfer the flat file to the target system.
+3.Import the staging table stage1 from the flat file using the import command or Oracle Data Pump.  –>   
+ imp system/orapw4db fromuser=SYSTEM touser=SYSTEM tables=STAGE1 file=stage1_baseline.dmp log=imp_basline
+4.Unpack the SQL plan baselines from the staging table into the SQL management base on the target system using the UNPACK_STGTAB_BASELINE function:
+
+DECLARE
+
+my_plans number;
+
+BEGIN
+
+my_plans := DBMS_SPM.UNPACK_STGTAB_BASELINE(
+
+table_name => ‘stage1’,
+
+fixed => ‘yes’);
+
+END;
+
+/
+
+Once afer unpack just issue the below query to see the baseline in the database.
+
+SQL> select SQL_HANDLE,SQL_TEXT,ENABLED,ACCEPTED,FIXED FROM dba_sql_plan_baselines;
+
+
+BEGIN
+  DBMS_SPM.CREATE_STGTAB_BASELINE(
+    table_name      => 'bsacg61cqmv9w',
+    table_owner     => 'SYS',
+    tablespace_name => 'USERS');
+END;
+/
+
+SET SERVEROUTPUT ON
+DECLARE
+  l_plans_packed  PLS_INTEGER;
+BEGIN
+  l_plans_packed := DBMS_SPM.pack_stgtab_baseline(
+    table_name      => 'spm_gui_waiting_search',
+    table_owner     => 'ROCRA_REF',
+	PLAN_NAME       =>'SQL_PLAN_2smuqry834qx1e2a17a6b');
+
+  DBMS_OUTPUT.put_line('Plans Packed: ' || l_plans_packed);
+END;
+/
+
+
+SET SERVEROUTPUT ON
+DECLARE
+  l_plans_unpacked  PLS_INTEGER;
+BEGIN
+  l_plans_unpacked := DBMS_SPM.unpack_stgtab_baseline(
+    table_name      => 'spm_gui_waiting_search',
+    table_owner     => 'ROCRA_REF');
+
+  DBMS_OUTPUT.put_line('Plans Unpacked: ' || l_plans_unpacked);
+END;
+/
+
+http://walkthrough-dba.blogspot.com/2017/12/exportimport-query-plan-from-one.html
+http://suchitdba.blogspot.com/p/how-to-copy-specific-execution-plan-for.html
+
+######################################## query purging #########################################################################
+
+http://kerryosborne.oracle-guy.com/2008/09/flush-a-single-sql-statement/
+
+http://oradba4all.blogspot.in/2012/12/flush-single-sql-statement-out-of.html
+
+
+SQL> select address, hash_value from v$sqlarea where sql_id like '&97y7vc8x7jhmc';
+
+ADDRESS          HASH_VALUE
+---------------- ----------
+00000000A9F34F98 1682024353
+
+ADDRESS          HASH_VALUE
+---------------- ----------
+000000043D8E43D8 3740583520
+
+exec dbms_shared_pool.purge('0000001DFABA6688,4276477684','C');

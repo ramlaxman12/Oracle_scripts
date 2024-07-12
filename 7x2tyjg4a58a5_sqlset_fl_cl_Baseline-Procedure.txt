@@ -1,0 +1,239 @@
+select distinct filetblimp1_.fil_filename as x0_0_ from collected_file
+collectedf0_, file_tbl filetblimp1_ where
+collectedf0_.fil_id=filetblimp1_.fil_id and ((collectedf0_.fcn_id=:1
+)and(collectedf0_.clf_status in('Waiting' , 'Pending' , 'Running' ,
+'Paused' , 'Failed')))
+
+Plan hash value: 154516281
+
+------------------------------------------------------------------------------------------------
+| Id  | Operation                     | Name           | Rows  | Bytes | Cost (%CPU)| Time     |
+------------------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT              |                |       |       |   568 (100)|          |
+|   1 |  HASH UNIQUE                  |                |   176 | 52272 |   568   (2)| 00:00:08 |
+|   2 |   NESTED LOOPS                |                |       |       |            |          |
+|   3 |    NESTED LOOPS               |                |   176 | 52272 |   567   (1)| 00:00:08 |
+|*  4 |     TABLE ACCESS FULL         | COLLECTED_FILE |   176 | 27280 |   567   (1)| 00:00:08 |
+|*  5 |     INDEX UNIQUE SCAN         | FILE_TBL_PK    |     1 |       |     0   (0)|          |
+|   6 |    TABLE ACCESS BY INDEX ROWID| FILE_TBL       |     1 |   142 |     0   (0)|          |
+------------------------------------------------------------------------------------------------
+
+
+
+Baselining the plan from the existing plan:
+
+exec dbms_sqltune.create_sqlset(sqlset_name => 'famd23vn1h2mm_sqlset_fl_cl',description => 'Alarm query checking');
+
+
+select snap_id,sql_id,plan_hash_value from dba_hist_sqlstat where sql_id='&7x2tyjg4a58a5' and plan_hash_value='&154516281' order by snap_id desc;
+
+Comment:here we will get snap id's we can take any of two continuous id's.
+
+
+declare
+baseline_ref_cur DBMS_SQLTUNE.SQLSET_CURSOR;
+begin
+open baseline_ref_cur for
+select VALUE(p) from table(
+DBMS_SQLTUNE.SELECT_WORKLOAD_REPOSITORY(&begin_snap_id, &end_snap_id,'sql_id='||CHR(39)||'&sql_id'||CHR(39)||' and plan_hash_value=319356053',NULL,NULL,NULL,NULL,NULL,NULL,'ALL')) p;
+DBMS_SQLTUNE.LOAD_SQLSET('famd23vn1h2mm_sqlset_fl_cl', baseline_ref_cur);
+end;
+/
+
+select * from table(dbms_xplan.display_sqlset('&gskfuwz7cmd6t_sqlset_fl_cl','&7x2tyjg4a58a5'));
+
+
+DECLARE
+  l_plans_loaded  PLS_INTEGER;
+BEGIN
+  l_plans_loaded := DBMS_SPM.load_plans_from_sqlset(
+    sqlset_name => 'famd23vn1h2mm_sqlset_fl_cl');
+END;
+/
+
+DECLARE
+my_plans pls_integer;
+BEGIN
+  my_plans := DBMS_SPM.LOAD_PLANS_FROM_SQLSET(
+    sqlset_name => 'MySTS01', 
+    basic_filter=>'plan_hash_value = ''1239572551'''
+    );
+END;
+/
+
+
+
+SQL> select SQL_HANDLE,PLAN_NAME,ENABLED,ACCEPTED,CREATED from DBA_SQL_PLAN_BASELINES order by CREATED asc;
+Comment: we will have to take the recent plan name.
+
+
+SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'&SQL_PLAN_8bfg8kydqtg763464037a'));
+
+Comment: it should match with abovementioned plan.
+
+var pbsts varchar2(30);
+exec :pbsts := dbms_spm.alter_sql_plan_baseline('<SQL_HANDLE>','<PLAN_NAME>','ACCEPTED','YES');
+
+Comment:Accept the plan which is matching with above mentioned plan.
+
+
+var pbsts varchar2(30);
+exec :pbsts := dbms_spm.alter_sql_plan_baseline('<SQL_HANDLE>','<PLAN_NAME>','enabled','NO');
+
+Comment:disable the other plans.
+
+
+SELECT * FROM   TABLE(DBMS_XPLAN.display_sql_plan_baseline(plan_name=>'<PLAN_NAME>'));
+
+Comment:check the plan and it should match with the above plan and this plan should be enable and accepted.
+
+Finally will have to get runtime execution plan using cursor(select* from table(dbms_xplan.display_cursor('<SQL_ID>')) it should use sql_plan baselined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#############################   base line procedure for existing hash value  ##################################
+
+=====STEP 1: GENERATE ALL PREVIOUS HISTORY RUN DETAILS OF SQL_ID FROM AWR ==
+
+break off sdate
+set lines 2000
+set linesize 2000
+col SDATE format a10
+col STIME format a10
+select to_char(begin_interval_time,'YYYY/MM/DD') SDATE,to_char(begin_interval_time,'HH24:MI')  STIME,s.snap_id,
+        sql_id, plan_hash_value PLAN,
+        ROUND(elapsed_time_delta/1000000,2) ET_SECS,
+        nvl(executions_delta,0) execs,
+        ROUND((elapsed_time_delta/decode(executions_delta,null,1,0,1,executions_delta))/1000000,2) ET_PER_EXEC,
+        ROUND((buffer_gets_delta/decode(executions_delta,null,1,0,1,executions_delta)), 2) avg_lio,
+        ROUND((CPU_TIME_DELTA/decode(executions_delta,null,1,0,1,executions_delta))/1000, 2) avg_cpu_ms,
+        ROUND((IOWAIT_DELTA/decode(executions_delta,null,1,0,1,executions_delta))/1000, 2) avg_iow_ms,
+        ROUND((DISK_READS_DELTA/decode(executions_delta,null,1,0,1,executions_delta)), 2) avg_pio,
+        ROWS_PROCESSED_DELTA num_rows
+from DBA_HIST_SQLSTAT S,  DBA_HIST_SNAPSHOT SS
+where s.sql_id = '&sql_id'
+and ss.snap_id = S.snap_id
+and ss.instance_number = S.instance_number
+order by sdate,stime;
+
+Enter value for sql_id: 7hgwdax4mn20v
+
+
+SDATE      STIME         SNAP_ID SQL_ID              PLAN    ET_SECS        EXECS ET_PER_EXEC        AVG_LIO AVG_CPU_MS AVG_IOW_MS    AVG_PIO   NUM_ROWS
+---------- ---------- ---------- ------------- ---------- ---------- ------------ ----------- -------------- ---------- ---------- ---------- ----------
+2016/09/13 11:00           23468 7hgwdax4mn20v 2844841640    1421.36            1     1421.36        4,301.0  152720.78     312.25        269        336
+2016/09/13 15:00           23472 7hgwdax4mn20v 2844841640    1070.12            1     1070.12        4,291.0  126987.69     348.34        270        336
+2016/09/13 17:00           23474 7hgwdax4mn20v 2844841640    1211.98            1     1211.98        4,374.0  183347.13     157.32        270        336
+2016/09/13 18:00           23475 7hgwdax4mn20v 2844841640     596.91            0      596.91          116.0   45123.14          0          0          0
+2016/09/14 01:00           23482 7hgwdax4mn20v 2844841640    1038.41            1     1038.41        4,309.0  123455.23     413.94        272        336
+2016/09/14 02:00           23483 7hgwdax4mn20v 1355798266     193.82            1      193.82        2,748.0   76799.32      28.95         16        168
+2016/09/14 03:00           23484 7hgwdax4mn20v 2844841640        .04            0         .04             .0         38          0          0          0
+2016/09/14 03:00           23484 7hgwdax4mn20v          0        .04            0         .04             .0      38.99          0          0          0
+2016/09/14 10:00           23491 7hgwdax4mn20v 2844841640     626.06            0      626.06           64.0   54658.69          0          0          0
+
+/*In this scenario sql_id=7hgwdax4mn20v and plan_hash_value for good plan that we want to force is 1355798266.*/
+Follow below steps to create sql baseline for sql_id
+
+ =====STEP 2: DROP SQL TUNING SET (STS) IF EXISTS=========================
+
+BEGIN
+  DBMS_SQLTUNE.DROP_SQLSET(
+    sqlset_name => 'SQL_FOR_7hgwdax4mn20v');
+END;
+
+======STEP 3: CREATE SQL TUNING SET ========================================
+
+BEGIN
+  DBMS_SQLTUNE.create_sqlset (
+    sqlset_name  => 'SQL_FOR_7hgwdax4mn20v',
+    description  => 'SQL tuning set for 7hgwdax4mn20v');
+END;
+/
+
+/* Populate STS from AWR by specifying snapshot for desired plan which we found using above query.
+In this scenario snap id's are 23483 and 23484 and change plan_hash_value accordingly.*/
+
+DECLARE
+  l_cursor  DBMS_SQLTUNE.sqlset_cursor;
+BEGIN
+  OPEN l_cursor FOR
+    SELECT VALUE(p)
+    FROM   TABLE (DBMS_SQLTUNE.select_workload_repository (
+                    23483,  -- begin_snap
+                    23484,  -- end_snap
+                    q'<sql_id in ('7hgwdax4mn20v') and plan_hash_value in (1355798266)>',  -- basic_filter 
+                    NULL, -- object_filter
+                    NULL, -- ranking_measure1
+                    NULL, -- ranking_measure2
+                    NULL, -- ranking_measure3
+                    NULL, -- result_percentage
+                    100)   -- result_limit
+                  ) p;
+
+  DBMS_SQLTUNE.load_sqlset (
+    sqlset_name     => 'SQL_FOR_7hgwdax4mn20v',
+    populate_cursor => l_cursor);
+END;
+/
+
+=========STEP 4: CHECK SQL SET DETAILS ================================
+
+column text format a20
+select sqlset_name, sqlset_owner, sqlset_id, sql_id,substr(sql_text,1,20) text,elapsed_time,buffer_gets,
+parsing_schema_name, plan_hash_value, bind_data from dba_sqlset_statements where sqlset_name ='SQL_FOR_7hgwdax4mn20v';
+
+=========STEP 5: LOAD DESIRED PLAN FROM STS AS SQL PLAN BASELINE=======
+
+DECLARE
+  L_PLANS_LOADED  PLS_INTEGER;
+BEGIN
+  L_PLANS_LOADED := DBMS_SPM.LOAD_PLANS_FROM_SQLSET(
+    SQLSET_NAME => 'SQL_FOR_7hgwdax4mn20v');
+END;
+
+========STEP 6: CHECK SQL PLAN BASELINE DETAILS =======================
+
+SELECT sql_handle, plan_name,enabled,accepted,fixed FROM dba_sql_plan_baselines
+WHERE signature IN (SELECT exact_matching_signature FROM v$sql WHERE sql_id='&SQL_ID')
+order by accepted,enabled;
+
+========STEP 7: ENABLE FIXED=YES=======================================
+
+var pbsts varchar2(30);
+exec :pbsts := dbms_spm.alter_sql_plan_baseline('SQL_64e76e773c55f1c4','SQL_PLAN_69tvffwy5bwf480a6275e','FIXED','YES');
+
+=======TEP 8: PURGE OLD EXECUTION PLAN FROM SHARED POOL ===============
+
+Find below two parameter which are required to purge specific sql from shared pool.
+
+select address||','||hash_value from gv$sqlarea where sql_id = '7hgwdax4mn20v';
+
+ADDRESS||','||HASH_VALUE
+----------------------------------------------------------------------------------------
+000000058B4B7E40,1879818331
+
+Now use below command to purge sql from shared pool.
+
+exec sys.dbms_shared_pool.purge('000000058B4B7E40,1879818331','C',1);
