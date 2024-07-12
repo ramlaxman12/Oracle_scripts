@@ -1,0 +1,13 @@
+##########33How to check datatype consistency between two environments##############
+
+
+Below script will help you to check datatype consistency between to environment.
+
+SELECT table_name, column_name, data_type, data_length,data_precision,data_scale,nullable
+FROM all_tab_columns   #### First Environment
+WHERE owner = '&OWNER'
+MINUS
+SELECT table_name,column_name,data_type,data_length,data_precision,data_scale,nullable
+FROM all_tab_columns@&db_link  #### Second Environment
+WHERE owner = '&OWNER2'
+order by table_name, column_name;

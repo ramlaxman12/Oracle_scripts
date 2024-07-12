@@ -1,0 +1,152 @@
+
+
+############ To find large files in a filesystem#############################
+file system lagrge file	 	 	 	 	 	 	 	 	 
+ ls -l | awk 'BEGIN{mega=1048576} $5 >= mega {$5 = $5/mega "MB"} {print}'	 	 	 	 	 	 
+ du -k  | awk 'BEGIN{mega=1048576} $1 >= mega {$1 = $1/mega "MB"} {print}'	 	 	 	 	 	 
+find /var -xdev -type f -size +500000c -exec ls -l {} \; |sort -nrk 5| head	 	 	 	 	 	 	 
+find /var -xdev -type f -size +500000c -exec ls -l {} \; |sort -nrk 5| head| awk 'BEGIN{mega=1048576} $5 >= mega {$5 = $5/mega "MB"} {print}'
+
+
+###############  TO delete file #####################################
+ls -lrt  | awk '{ print "rm -rf "$9}'
+
+find /tgcbsora/ora10g/rdbms/audit/*.aud -mtime +1 -exec rm {} \;
+
+/mgcbsora/ora10g/rdbms/log/bdump
+
+/tgcbsora/ora10g/rdbms/log/bdump
+
+find /mgcbsora/ora10g/rdbms/log/bdump/*.trc -mtime +1 -exec rm {} \;
+
+find /oracle/dbhome11g/app/diag/diag/rdbms/dms/DMS1/trace/*.trc -mtime +2 -exec rm {} \;
+
+find  /mgcbsora/ora10g/rdbms/log/bdump/*.trc -mtime +1 -exec rm {} \;
+
+find  /home/oracle/oradiag_oracle/diag/clients/user_oracle/host_1672004301_80/trace/*.trc -mtime +2 -exec ls-ltr {} \;
+
+find  /oracle/dbhome11g/app/diag/diag/rdbms/dms/DMS1/trace/ '.trc' -mtime +1 -exec rm {} \;
+
+find |grep Nov |grep .trm| head -3550 | awk '{print "ls"  $9}'
+
+
+ find /bgfinarch/BGCBS_DR/*.arc -mtime +0  -exec rm {} \;
+
+dcrrb@agvb.co.in
+
+select p.spid,p.pid from v$session s,v$process p where s.sid='15298' and p.addr=s.paddr;
+
+?-mtime 60 If you skip + or - it means exactly 60 days.
+
+So to find text files that were last modified 60 days ago, use
+$ find /home/you -iname "*.txt" -mtime -60 -print
+
+Display content of file on screen that were last modified 60 days ago, use
+$ find /home/you -iname "*.txt" -mtime -60 -exec cat {} \; 
+
+Count total number of files using wc command
+$ find /home/you -iname "*.txt" -mtime -60 | wc -l
+
+You can also use access time to find out pdf files. Following command will print the list of all pdf file that were accessed in last 60 days:
+$ find /home/you -iname "*.pdf" -atime -60 -type -f
+
+List all mp3s that were accessed exactly 10 days ago:
+$ find /home/you -iname "*.mp3" -atime 10 -type -f
+
+There is also an option called -daystart. It measure times from the beginning of today rather than from 24 hours ago. So, to list the all mp3s in your home directory that were accessed yesterday, type the command
+$ find /home/you -iname "*.mp3" -daystart -type f -mtime 1 
+
+Where,
+?-type f - Only search for files and not directories
+
+-daystart option
+
+The -daystart option is used to measure time from the beginning of the current day instead of 24 hours ago. Find out all perl (*.pl) file modified yesterday, enter:
+find /nas/projects/mgmt/scripts/perl -mtime 1 -daystart -iname "*.pl"
+
+You can also list perl files that were modified 8-10 days ago, enter:
+ To list all of the files in your home directory tree that were modified from two to four days ago, type:
+find /nas/projects/mgmt/scripts/perl -mtime 8 -mtime -10 -daystart -iname "*.pl"
+
+-newer option
+
+To find files in the /nas/images directory tree that are newer than the file /tmp/foo file, enter:
+find /etc -newer /tmp/foo
+
+You can use the touch command to set date timestamp you would like to search for, and then use -newer option as follows
+touch --date "2010-01-05" /tmp/foo
+# Find files newer than 2010/Jan/05, in /data/images
+find /data/images -newer /tmp/foo
+ 
+
+archive.sql
+
+
+
+SELECT THREAD# "Thread",SEQUENCE# "Last Sequence Generated"
+          FROM V$ARCHIVED_LOG
+          WHERE (THREAD#,FIRST_TIME ) IN (SELECT THREAD#,MAX(FIRST_TIME) FROM V$ARCHIVED_LOG GROUP BY THREAD#)
+          ORDER BY 1;
+
+
+
+-rw-r--r--   1 oracle     oinstall       250 Sep  1  2013 running_jobs.sql
+-rw-r--r--   1 oracle     oinstall       378 Sep  1  2013 longopssql.sql
+-rw-r--r--   1 oracle     oinstall       755 Sep  1  2013 job_duration_pk.sql
+-rw-r--r--   1 oracle     oinstall      5378 Sep  9  2013 unixusr.sql
+-rw-r--r--   1 oracle     oinstall       200 Sep 22  2013 invalid_obj.sql
+-rw-r--r--   1 oracle     oinstall      1540 Sep 30  2013 user_detail_pk.sql
+
+
+
+        ORA 3137 [12333]' was completely flood controlled (0x6)
+
+
+
+
+Fatal NI connect error 12170.
+
+  VERSION INFORMATION:
+        TNS for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+        TCP/IP NT Protocol Adapter for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+        Oracle Bequeath NT Protocol Adapter for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+  Time: 19-DEC-2014 09:53:37
+  Tracing not turned on.
+  Tns error struct:
+    ns main err code: 12535
+
+TNS-12535: TNS:operation timed out
+    ns secondary err code: 12560
+    nt main err code: 505
+
+TNS-00505: Operation timed out
+    nt secondary err code: 78
+    nt OS err code: 0
+
+
+
+
+Fatal NI connect error 12170.
+
+  VERSION INFORMATION:
+        TNS for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+        TCP/IP NT Protocol Adapter for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+        Oracle Bequeath NT Protocol Adapter for IBM/AIX RISC System/6000: Version 11.2.0.3.0 - Production
+  Time: 19-DEC-2014 09:52:32
+  Tracing not turned on.
+  Tns error struct:
+    ns main err code: 12535
+
+TNS-12535: TNS:operation timed out
+    ns secondary err code: 12560
+    nt main err code: 505
+
+TNS-00505: Operation timed out
+    nt secondary err code: 78
+    nt OS err code: 0
+  Client address: (ADDRESS=(PROTOCOL=tcp)(HOST=10.53.80.4)(PORT=49321))
+Fri Dec 19 09:53:37 2014
+
+
+
+

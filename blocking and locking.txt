@@ -1,0 +1,30 @@
+set lines 190 pages 1000
+col KILL_STATEMENTS for a78
+col PROGRAM for a6
+col module for a10
+col session_status format a15
+col spid for a15
+
+select s.status as session_status,substr(s.module,1,10) module , substr(s.program,1,6) Program, round(s.last_call_et/60) min,p.spid,('alter system disconnect session ''' || s.sid || ',' || s.serial# || ''' immediate;') as "KILL_STATEMENTS"
+FROM v$session s, v$process p
+WHERE s.paddr = p.addr
+AND s.USERNAME<>'SYS'
+AND s.USERNAME='MULDMS'
+AND S.SID in (
+             SELECT sid  FROM v$lock WHERE (id1, id2, TYPE) IN (SELECT id1, id2, TYPE FROM v$lock WHERE request>0)
+) order by 1,4
+/
+
+COL Blocking for a40
+select 'SID ' || l1.sid ||' is blocking  ' || l2.sid  ||' since '|| l1.ctime Blocking
+from    v$lock l1, v$lock l2
+where   l1.block =1 and l2.request > 0
+and     l1.id1=l2.id1
+and     l1.id2=l2.id2
+order by l1.ctime
+/
+
+
+
+select sql_text from v$sqltext_with_newlines a,v$session b where a.HASH_VALUE = b.SQL_HASH_VALUE and b.sid='&sid' order by piece;
+

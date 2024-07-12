@@ -1,0 +1,70 @@
+
+
+SQL> !pwd
+/home/oracle/SVFE_SVISTA_STATS/stats_JAN11
+
+
+NAME      INSTANCE_NAME    DATABASE_ROLE    OPEN_MODE            HOST_NAME                      DATABASE_STATUS   LOGINS     UP TIME
+--------- ---------------- ---------------- -------------------- ------------------------------ ----------------- ---------- -------------------------
+SVFE      svfe             PRIMARY          READ WRITE           SWIDB002                       ACTIVE            ALLOWED    21-NOV-2014 02:14:20
+
+
+***INSTANCE STATUS***
+
+
+INSTANCE_NAME    HOST_NAME                      STATUS
+---------------- ------------------------------ ------------
+svfe             SWIDB002                       OPEN
+
+
+
+
+
+TABLE_NAME                     LAST_ANAL STATUS
+------------------------------ --------- --------
+T_ATM_GROUP                    30-SEP-13 VALID
+T_FRAUD_BINS                   30-SEP-13 VALID
+PIN_RESP_TAB                   30-SEP-13 VALID
+POS_CTRTOT_TAB                 30-SEP-13 VALID
+CTR_TAB                        30-SEP-13 VALID
+T_ATM_CTR                      30-SEP-13 VALID
+INST_CURR_CNVT_RATE            30-SEP-13 VALID
+VOICE_AUTH_TAB                 30-SEP-13 VALID
+
+9 rows selected.
+
+Elapsed: 00:00:00.29
+
+
+
+
+
+01:29:29 SQL> !date
+Fri Jan  9 01:29:34 MUT 2015
+
+
+ 
+01:31:55 SQL> execute dbms_stats.GATHER_TABLE_STATS(OWNNAME=> 'SVISTA', GRANULARITY=> 'ALL', TABNAME=> 'T_ATM_GROUP', no_invalidate=>false, degree=>2, cascade=>true, estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE);
+
+PL/SQL procedure successfully completed.
+
+Elapsed: 00:00:03.44
+
+
+
+
+
+TABLE_NAME                     OWNER                          LAST_ANAL STATUS
+------------------------------ ------------------------------ --------- --------
+T_ATM_GROUP                    SVISTA                         09-JAN-15 VALID
+T_FRAUD_BINS                   SVISTA                         09-JAN-15 VALID
+PIN_RESP_TAB                   SVISTA                         09-JAN-15 VALID
+POS_CTRTOT_TAB                 SVISTA                         09-JAN-15 VALID
+CTR_TAB                        SVISTA                         09-JAN-15 VALID
+T_ATM_CTR                      SVISTA                         09-JAN-15 VALID
+INST_CURR_CNVT_RATE            SVISTA                         09-JAN-15 VALID
+VOICE_AUTH_TAB                 SVISTA                         09-JAN-15 VALID
+
+9 rows selected.
+
+Elapsed: 00:00:00.08

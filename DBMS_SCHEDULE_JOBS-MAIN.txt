@@ -1,0 +1,249 @@
+######################################## query purging #########################################################################
+
+http://kerryosborne.oracle-guy.com/2008/09/flush-a-single-sql-statement/
+
+http://oradba4all.blogspot.in/2012/12/flush-single-sql-statement-out-of.html
+
+
+
+SQL> select address, hash_value from v$sqlarea where sql_id like '&97y7vc8x7jhmc';
+
+ADDRESS          HASH_VALUE
+---------------- ----------
+00000000A9F34F98 1682024353
+
+exec dbms_shared_pool.purge('00000000A9F34F98,1682024353','C');
+
+
+
+=================================================================================================
+
+select operation,start_time from DBA_OPTSTAT_OPERATIONS order by start_time;
+
+-- Create jobs.
+BEGIN
+ ###################### Job defined entirely by the CREATE JOB procedure.#########################33
+
+  DBMS_SCHEDULER.create_job (
+    job_name        => 'test_full_job_definition',
+    job_type        => 'PLSQL_BLOCK',
+    job_action      => 'BEGIN DBMS_STATS.gather_schema_stats(''SCOTT''); END;',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'freq=hourly; byminute=0',
+    end_date        => NULL,
+    enabled         => TRUE,
+    comments        => 'Job defined entirely by the CREATE JOB procedure.');
+
+  ##################Job defined by an existing program and schedule.##############################3
+
+  DBMS_SCHEDULER.create_job (
+    job_name      => 'test_prog_sched_job_definition',
+    program_name  => 'test_plsql_block_prog',
+    schedule_name => 'test_hourly_schedule',
+    enabled       => TRUE,
+    comments      => 'Job defined by an existing program and schedule.');
+
+  ##################3Job defined by existing program and inline schedule.#############################33
+
+  DBMS_SCHEDULER.create_job (
+    job_name        => 'test_prog_job_definition',
+    program_name    => 'test_plsql_block_prog',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'freq=hourly; byminute=0',
+    end_date        => NULL,
+    enabled         => TRUE,
+    comments        => 'Job defined by existing program and inline schedule.');
+
+  #########################Job defined by existing schedule and inline program.############################
+
+  DBMS_SCHEDULER.create_job (
+     job_name      => 'test_sched_job_definition',
+     schedule_name => 'test_hourly_schedule',
+     job_type      => 'PLSQL_BLOCK',
+     job_action    => 'BEGIN DBMS_STATS.gather_schema_stats(''SCOTT''); END;',
+     enabled       => TRUE,
+     comments      => 'Job defined by existing schedule and inline program.');
+END;
+/
+
+PL/SQL procedure successfully completed.
+
+######################## Display job details.#########################################################
+
+SELECT owner, job_name, enabled FROM dba_scheduler_jobs;
+
+OWNER                          JOB_NAME                       ENABL
+------------------------------ ------------------------------ -----
+SYS                            PURGE_LOG                      TRUE
+SYS                            GATHER_STATS_JOB               TRUE
+SYS                            TEST_FULL_JOB_DEFINITION       TRUE
+SYS                            TEST_PROG_SCHED_JOB_DEFINITION TRUE
+SYS                            TEST_PROG_JOB_DEFINITION       TRUE
+SYS                            TEST_SCHED_JOB_DEFINITION      TRUE
+
+
+FREQ=DAILY;byhour=22; byminute=00
+
+begin
+    dbms_scheduler.set_attribute
+     (name => 'TEST_JOB',
+     attribute => 'REPEAT_INTERVAL',
+     value     => 'FREQ=HOURLY; INTERVAL=5');
+    end;
+    /
+
+SELECT owner, program_name, enabled FROM dba_scheduler_programs;
+
+SELECT owner, schedule_name FROM dba_scheduler_schedules;
+
+SELECT owner, job_name, enabled,state FROM dba_scheduler_jobs;
+
+
+select OWNER,FAILURE_COUNT,JOB_TYPE,job_action,REPEAT_INTERVAL,NEXT_RUN_DATE,JOB_NAME from dba_scheduler_jobs where JOB_NAME like'%GENERATEPARTITIONSJOB%';
+
+select STATUS,ACTUAL_START_DATE,ERRORS,OUTPUT from DBA_SCHEDULER_JOB_RUN_DETAILS where JOB_NAME='DCIS_PURGE_AUDIT_TRAIL'
+
+
+
+select dbms_metadata.get_ddl('JOB','CE_LOAD_JOB') from dual;
+
+SELECT DBMS_METADATA.GET_DDL('PROCOBJ','CE_LOAD','WLN_MART') FROM DUAL;
+
+select text from all_source where name = '&PACK_JACK' and type = 'PACKAGE' order by line;
+
+select text from all_source where name = '&PACK_JACK' and type = 'PACKAGE BODY' order by line;
+
+SELECT  LAST_DDL_TIME, TIMESTAMP FROM    DBA_OBJECTS
+WHERE   OBJECT_TYPE = 'PACKAGE BODY'
+        AND OBJECT_NAME = 'CE_LOAD';
+
+
+
+
+BEGIN
+  DBMS_SCHEDULER.create_job (
+    job_name        => 'test_full_job_definition',
+    job_type        => 'PLSQL_BLOCK',
+    job_action      => 'BEGIN DBMS_STATS.gather_schema_stats(''SCOTT''); END;',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'freq=hourly; byminute=0',
+    end_date        => NULL,
+    enabled         => TRUE,
+    comments        => 'Job defined entirely by the CREATE JOB procedure.');
+END;
+/
+DBMS_JOB
+
+DECLARE
+  l_job NUMBER := 0;
+BEGIN
+  DBMS_JOB.SUBMIT(l_job,'procedure_name;',sysdate,'TRUNC(sysdate)+1+1/288');
+END;
+Run a Job
+DBMS_SCHUDULER
+
+EXEC dbms_scheduler.run_job('myjob');
+DBMS_JOB
+
+EXEC dbms_job.run(job_no);
+Monitor Jobs
+DBMS_SCHEDULER
+
+SELECT * FROM dba_scheduler_jobs WHERE job_name = 'MY_JAVA_JOB';
+DBMS_JOB
+
+SELECT job, what, next_date, next_sec FROM user_jobs;
+Remove a Job
+DBMS_SCHEDULER
+
+EXEC DBMS_SCHEDULER.DROP_JOB('my_java_job');
+DBMS_JOB
+
+EXECUTE DBMS_JOB.REMOVE(jobno);
+DBMS_SCHEDULER Functionality
+DBMS_SCHEDULER has the ability to schedule a job to run outside of the DB. The following will run the myClass java executable every minute.
+
+BEGIN
+  DBMS_SCHEDULER.CREATE_JOB (
+     job_name           => 'my_java_job',
+     job_type           => 'EXECUTABLE',
+     job_action         => '/usr/bin/java myClass',
+     repeat_interval    => 'FREQ=MINUTELY',
+     enabled            => TRUE
+  );
+END;
+REPEAT_INTERVAL Examples
+'FREQ=DAILY; BYDAY=SUN; BYHOUR=18;',
+ 
+'freq=MINUTELY;interval=1',  
+ 
+'freq=MINUTELY;interval=5',  
+ 
+'freq=HOURLY;interval=1',    
+ 
+'FREQ=DAILY; BYDAY=MON,TUE,WED,THU,FRI,SAT,SUN; BYHOUR=22;',
+
+
+#############################################################################################################################3
+
+set lines 180 pages 1000
+col client_name for a40
+col attributes for a60
+select client_name, status,attributes,service_name from dba_autotask_client;
+
+ 
+BEGIN
+  DBMS_AUTO_TASK_ADMIN.disable(
+    client_name => 'auto space advisor',
+    operation   => NULL,
+    window_name => NULL);
+END;
+/
+ 
+BEGIN
+  DBMS_AUTO_TASK_ADMIN.disable(
+    client_name => 'sql tuning advisor',
+    operation   => NULL,
+    window_name => NULL);
+END;
+/
+ 
+BEGIN
+  DBMS_AUTO_TASK_ADMIN.disable(
+    client_name => 'auto optimizer stats collection',
+    operation   => NULL,
+    window_name => NULL);
+END;
+/
+ 
+select client_name, status,attributes,service_name from dba_autotask_client
+/
+ 
+#################################### Enabling#####################################
+
+set pagesize 299
+set long 999
+select dbms_metadata.get_ddl('PROCOBJ','DBACLASS_PURGE','DBAUSER') from dual;
+
+
+BEGIN
+dbms_auto_task_admin.enable(client_name => 'sql tuning advisor', operation => NULL, window_name => NULL);
+END;
+/
+
+#################   disabling schedler jobs in oracle database #######################33
+
+exec dbms_scheduler.disable('SYS.XMLDB_NFS_CLEANUP_JOB');
+exec dbms_scheduler.disable('SYS.SM$CLEAN_AUTO_SPLIT_MERGE');
+exec dbms_scheduler.disable('SYS.RSE$CLEAN_RECOVERABLE_SCRIPT');
+exec dbms_scheduler.disable('SYS.FGR$AUTOPURGE_JOB');
+exec dbms_scheduler.disable('SYS.BSLN_MAINTAIN_STATS_JOB');
+exec dbms_scheduler.disable('SYS.DRA_REEVALUATE_OPEN_FAILURES');
+exec dbms_scheduler.disable('SYS.HM_CREATE_OFFLINE_DICTIONARY');
+exec dbms_scheduler.disable('SYS.ORA$AUTOTASK_CLEAN');
+exec dbms_scheduler.disable('SYS.FILE_WATCHER');
+exec dbms_scheduler.disable('SYS.PURGE_LOG');
+exec dbms_scheduler.disable('SYS.MGMT_STATS_CONFIG_JOB');
+exec dbms_scheduler.disable('SYS.MGMT_CONFIG_JOB');
+exec dbms_scheduler.disable('SYS.RLM$SCHDNEGACTION');
+exec dbms_scheduler.disable('SYS.RLM$EVTCLEANUP');

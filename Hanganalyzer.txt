@@ -1,0 +1,41 @@
+Hi Laxman,
+
+Link: http://jvardhan.blogspot.in/2012/06/sqlplus-prelim-used-for-hang-analysis.html
+
+
+sqlplus -prelim used for hang analysis
+
+C:\Users\jayva>set ORACLE_SID=target
+
+C:\Users\jayva>sqlplus /nolog
+
+SQL*Plus: Release 11.2.0.1.0 Production on Tue Jun 5 19:56:09 2012
+
+Copyright (c) 1982, 2010, Oracle.  All rights reserved.
+
+SQL> set _prelim on
+SQL> conn / as sysdba
+Prelim connection established
+SQL> oradebug setmypid
+Statement processed.
+SQL> oradebug hanganalyze 12
+Statement processed.
+SQL> exit
+Disconnected from ORACLE
+
+C:\Users\jayva>sqlplus -prelim /nolog
+
+SQL*Plus: Release 11.2.0.1.0 Production on Tue Jun 5 19:57:05 2012
+
+Copyright (c) 1982, 2010, Oracle.  All rights reserved.
+
+SQL> connect / as sysdba
+Prelim connection established
+SQL> oradebug setmypid
+Statement processed.
+SQL> oradebug hanganalyze 12
+Statement processed.
+SQL> exit
+Disconnected from ORACLE
+
+FYI ..

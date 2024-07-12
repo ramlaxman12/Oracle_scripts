@@ -1,0 +1,124 @@
+col begin_interval_time for a30
+break on plan_hash_value on startup_time skip 1
+select ss.snap_id, ss.instance_number node, begin_interval_time, s.sql_id, s.plan_hash_value,
+nvl(executions_delta,0) execs,
+(elapsed_time_delta/decode(nvl(executions_delta,0),0,1,executions_delta))/1000000 avg_etime,
+(buffer_gets_delta/decode(nvl(buffer_gets_delta,0),0,1,executions_delta)) avg_lio, version_count
+from DBA_HIST_SQLSTAT S, DBA_HIST_SNAPSHOT SS
+where s.sql_id = nvl('&sql_id','4dqs2k5tynk61')
+and ss.snap_id = S.snap_id
+and ss.instance_number = S.instance_number
+and executions_delta > 0 --and plan_hash_value=3099046451
+order by 1, 2, 3
+/
+
+select sql_text, sql_fulltext, executions, elapsed_time/1000000 seconds
+from gv$sql where sql_id='&SQL_ID'
+order by executions desc;
+
+
+
+var sqlid varchar2(30);
+exec :sqlid := trim('&sqlid_in');
+select stat.snap_id,
+       to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI') as snap_start_time,
+       stat.plan_hash_value as plan_hash,
+       stat.optimizer_mode as optimizer,
+       sum(stat.executions_delta) as execs_dlt,
+       sum(elapsed_time_delta / 1000000.0) as elap_dlt
+      from dba_hist_sqlstat stat, dba_hist_sqltext text, dba_hist_snapshot dhs
+where stat.sql_id = text.sql_id
+      and stat.dbid   = text.dbid
+      and stat.dbid = dhs.dbid
+      and stat.snap_id = dhs.snap_id
+      and stat.instance_number = dhs.instance_number
+      and stat.sql_id = :sqlid
+group by stat.snap_id, to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI'), stat.plan_hash_value, stat.optimizer_mode, to_char(substr(text.sql_text, regexp_instr(text.sql_text,'<',1)+1,(regexp_instr(text.sql_text,'>',1)-regexp_instr(text.sql_text,'<',1)-1)))
+order by stat.snap_id, to_char(dhs.begin_interval_time, 'DD-MON-YYYY HH24:MI');
+
+########  filesystem IO
+
+col AVERAGE_READ_TIME for 9999.999
+col FS for a15
+col host_name for a15
+select HOST_NAME,substr(file_name,1,(instrb(file_name,'/',2,1) - 1)) FS,avg(AVERAGE_READ_TIME *10 ) AVERAGE_READ_TIME,
+sum(PHYSICAL_READS + PHYSICAL_BLOCK_READS) Reads
+from gv$filemetric_history fh,dba_data_files df, gv$instance i
+where df.file_id = fh.file_id and AVERAGE_READ_TIME > 0 and i.INST_ID = fh.INST_ID
+group by HOST_NAME,substr(file_name,1,(instrb(file_name,'/',2,1) - 1));
+
+
+col AVERAGE_WRITE_TIME for 9999.999
+col FS for a15
+col host_name for a15
+select HOST_NAME,substr(file_name,1,(instrb(file_name,'/',2,1) - 1)) FS,avg(AVERAGE_WRITE_TIME * 10) AVERAGE_WRITE_TIME,
+sum(PHYSICAL_WRITES + PHYSICAL_BLOCK_WRITES) Writes
+from gv$filemetric_history fh,dba_data_files df, gv$instance i
+where df.file_id = fh.file_id and AVERAGE_WRITE_TIME > 0 and i.INST_ID = fh.INST_ID
+group by HOST_NAME,substr(file_name,1,(instrb(file_name,'/',2,1) - 1));
+
+col AVERAGE_WRITE_TIME for 99999.999
+col FS for a15
+col host_name for a15
+select HOST_NAME,to_char(END_TIME,'HH24:MI') EndTime,substr(file_name,1,(instrb(file_name,'/',2,1) - 1)) FS,avg(AVERAGE_WRITE_TIME * 10) AVERAGE_WRITE_TIME,
+sum(PHYSICAL_WRITES + PHYSICAL_BLOCK_WRITES) Writes
+from gv$filemetric_history fh,dba_data_files df, gv$instance i
+where df.file_id = fh.file_id and AVERAGE_WRITE_TIME > 0 and i.INST_ID = fh.INST_ID
+group by HOST_NAME,to_char(END_TIME,'HH24:MI'),substr(file_name,1,(instrb(file_name,'/',2,1) - 1));
+
+
+
+
+22:16:08 SQL> ALTER SESSION ENABLE RESUMABLE TIMEOUT 3600;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel query;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel ddl;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel dml;
+
+
+
+
+   SNAP_ID       NODE BEGIN_INTERVAL_TIME            SQL_ID        PLAN_HASH_VALUE      EXECS  AVG_ETIME    AVG_LIO VERSION_COUNT
+---------- ---------- ------------------------------ ------------- --------------- ---------- ---------- ---------- -------------
+     32526          1 13-AUG-15 03.48.06.000 PM      1hvnp5xf14hn6      4100969089         28 183.635772 9827432.57             1
+     32527          1 13-AUG-15 04.00.42.961 PM      1hvnp5xf14hn6                        197 341.347474 7505752.85             1
+
+
+ALTER SESSION ENABLE RESUMABLE TIMEOUT 3600;
+alter session force parallel query;
+alter session force parallel ddl;
+alter session force parallel dml;
+
+
+
+Username - goc-gcidba-msil@hp.com
+Password - MSILdba10
+
+
+
+set linesize 200
+set pagesize 200
+column oracle_username format a15
+column os_user_name format a15
+column object_name format a37
+column object_type format a37
+select a.session_id,a.oracle_username, a.os_user_name, b.owner "OBJECT OWNER", b.object_name,b.object_type,a.locked_mode,c.sid,c.serial# from 
+ (select object_id, SESSION_ID, ORACLE_USERNAME, OS_USER_NAME, LOCKED_MODE from v$locked_object) a, 
+ (select object_id, owner, object_name,object_type from dba_objects where object_name='&AM_DOCS') b,
+ (select sid,serial# from v$session)c
+where a.object_id=b.object_id and a.session_id=c.sid;
+
+
+  DMS130815_2to230.html
+
+
+
+

@@ -1,0 +1,96 @@
+
+
+analyze table SVISTA.acct_hold_amount_tab validate structure cascade;
+
+ 
+########### To find user from sid########################
+select s.sid,p.pid from v$session s,v$process p where p.addr=s.paddr and s.sid='&sid';
+
+select sid,username from v$session where paddr in (select addr from v$process where spid=&PID);
+
+############It give SQL Query which is run by SID#################
+
+SQL>select a.sql_text, a.hash_value from v$sqltext_with_newlines a where a.hash_value in ( (select decode(sql_hash_value,'0', prev_hash_value,sql_hash_value) hash_value from v$session where sid=&sid)) order by a.piece;
+
+############## to get execution plane for sql statement#############
+
+
+select * from table(dbms_xplan.display_cursor('&SQL_ID'));
+
+
+select * from table(dbms_xplan.display_awr('&SQL_ID'));
+
+
+
+
+########################## explain table for a query##########################
+
+explain plan for we have to give query here
+
+
+SET LINESIZE 130
+SET PAGESIZE 0
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+###############wait events on server to find#######################
+
+select EVENT,count(*) from v$session
+where osuser='oracle'
+and   module is null
+and   status='ACTIVE'
+group by EVENT;
+
+
+SELECT * FROM v$system_event
+ WHERE event LIKE '%control%';
+v$session_wait
+
+##############It show different types of events and number of running event at that time###############
+
+SQL>select event,count(*) from v$session group by event order by 2;
+
+
+############### It will give remaining time for the long running query #################################
+
+SQL>SELECT SID, SERIAL#,OPNAME, CONTEXT, SOFAR, TOTALWORK,ROUND(SOFAR/TOTALWORK*100,2) "%_COMPLETE" FROM V$SESSION_LONGOPS WHERE OPNAME NOT LIKE '%aggregate%' AND TOTALWORK != 0 AND SOFAR <> TOTALWORK;
+				
+
+                                                                                              OR
+SQL>set lines 300
+SQL>col TARGET for a40
+SQL>col SQL_ID for a20
+SQL>select SID,TARGET||OPNAME TARGET, TOTALWORK, SOFAR,TIME_REMAINING/60 Mins_Remaining,ELAPSED_SECONDS,SQL_ID from v$session_longops where TIME_REMAINING>0 order by TIME_REMAINING;
+
+#########################It gives from which application server or program run behind the SID or SQI_ID ##################
+
+SQL>select username,osuser ,sid,sql_id,MACHINE,PROGRAM from v$session where SID='&SID';
+				OR
+SQL>select username,osuser ,sid,sql_id,MACHINE,PROGRAM from v$session where SQL_ID='&SQL_ID';
+
+
+
+set pagesize 999
+set line 150
+select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE (type <> 'BACKGROUND' or username <>'SYS');
+sudo /var/opt/OV/bin/instrumentation/dbspicao -pdf
+col 
+select 
+    substr(module,1,10) module,sid,sql_id, status,
+       (select
+          to_char(substr(x.SQL_FULLTEXT,1,3000)) sql_text from  v$sqlarea x
+       where a.SQL_HASH_VALUE = x.HASH_VALUE) sql_text,
+       blocking_session blocker,
+       seconds_in_wait waited,
+    (select rpad(module,10,' ')||':'|| (select to_char(substr(x.SQL_FULLTEXT,1,3000)) from  v$sqlarea x
+                          where aa.SQL_HASH_VALUE = x.HASH_VALUE) x
+     from v$session aa where aa.sid = a.sid) blocking_sql
+from v$session a
+where 1=1
+and status = 'ACTIVE'
+and  blocking_session is not NULL
+and  sql_id is not NULL
+order by waited desc;
+
+
+2vh993gkvdkt1

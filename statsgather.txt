@@ -1,0 +1,25 @@
+###########################Verifying Column Statistics####################
+
+SELECT COLUMN_NAME, NUM_DISTINCT, NUM_NULLS, NUM_BUCKETS, DENSITY
+FROM DBA_TAB_COL_STATISTICS
+WHERE TABLE_NAME ="&tablename"
+ORDER BY COLUMN_NAME;
+
+###############Verifying Index Statistics###########################
+
+SELECT INDEX_NAME "NAME", NUM_ROWS, DISTINCT_KEYS "DISTINCT",
+  LEAF_BLOCKS, CLUSTERING_FACTOR "CF", BLEVEL "LEVEL",
+  AVG_LEAF_BLOCKS_PER_KEY "ALFBPKEY"
+  FROM DBA_INDEXES
+  WHERE owner = '&ownername'
+  ORDER BY INDEX_NAME;
+
+####################Verifying Table Statistics##########################
+
+SELECT TABLE_NAME, NUM_ROWS, BLOCKS, AVG_ROW_LEN,
+     TO_CHAR(LAST_ANALYZED, 'MM/DD/YYYY HH24:MI:SS')
+     FROM DBA_TABLES
+     WHERE TABLE_NAME IN (' CURR_TRANS','ACCT_TAB','CARD_ACCT_TAB','ACCT_HOLD_AMOUNT_TAB','STTL_TAB ');
+
+
+GRANULARITY=> 'ALL', TABNAME=> 'CURR_TRANS', no_invalidate=>false, degree=>2, cascade=>true, estimate_percent=>30);

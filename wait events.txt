@@ -1,0 +1,64 @@
+set linesize 200
+col a.event for a50
+Select a.event, a.total_waits, a.time_waited, a.average_wait
+From v$system_event a, v$event_name b, v$system_wait_class c
+Where a.event_id=b.event_id
+And b.wait_class#=c.wait_class#
+And c.wait_class in ('Application','Concurrency')
+order by average_wait desc;
+
+
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et  between 300 and 360;
+
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et  between 360 and 480;
+
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et  
+
+
+select sid, serial#, username,
+  to_char(sysdate-last_call_et/24/60/60,'hh24:mi:ss') started,
+  trunc(last_call_et/60) || ' mins, ' || mod(last_call_et,60) ||' secs' dur, last_call_et
+   from v$session
+  where username is not null;
+
+
+select sid, serial#, username,
+  to_char(sysdate-last_call_et/24/60/60,'hh24:mi:ss') started,
+  trunc(last_call_et/60) || ' mins, ' || mod(last_call_et,60) ||' secs' dur, last_call_et
+   from v$session
+  where username is not null;
+
+############## durga  msil################
+
+
+select EVENT,count(*) from v$session
+where osuser='oracle'
+and   module is null
+and   status='ACTIVE'
+group by EVENT;
+
+
+
+
+
+col NAME for a20
+col INTERVAL_SIZE for a40
+set linesize 200
+select * from v$metricgroup;
+
+
+
+set lines 190 pages 1000
+col KILL_STATEMENTS for a78
+col PROGRAM for a30
+col module for a20
+col session_status format a15
+
+select s.status as session_status,substr(s.module,1,10) module , substr(s.program,1,15) Program, round(s.last_call_et/60) min,('alter system disconnect session ''' || s.sid || ',' || s.serial# || ''' immediate;') as "KILL_STATEMENTS"
+FROM v$session s, v$process p
+WHERE s.paddr = p.addr
+AND s.USERNAME<>'SYS'
+AND S.SID in (
+             SELECT sid  FROM v$lock WHERE (id1, id2, TYPE) IN (SELECT id1, id2, TYPE FROM v$lock WHERE request>0)
+) order by 1,4
+/

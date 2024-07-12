@@ -1,0 +1,53 @@
+
+###########insert queries on database############################3
+
+select sql_text,first_load_time from
+    (
+      select * from v$sql
+      where parsing_schema_name like 'VISTA'
+        and (sql_text like '%UPDATE %' or sql_text like '%INSERT %')
+        and to_timestamp(first_load_time, 'YYYY-MM-DD/HH24:MI:SS') > to_timestamp('2015-06-01/09:00:00', 'YYYY-MM-DD/HH24:MI:SS')
+      order by first_load_time desc
+    )
+    where rownum < 30000;
+
+
+#########all queries details#########################
+
+ select v.SQL_TEXT,
+               v.PARSING_SCHEMA_NAME,
+               v.FIRST_LOAD_TIME,
+               v.DISK_READS,
+               v.ROWS_PROCESSED,
+               v.ELAPSED_TIME,
+               v.service
+          from v$sql v
+    where to_date(v.FIRST_LOAD_TIME,'YYYY-MM-DD hh24:mi:ss')>ADD_MONTHS(trunc(sysdate,'MM'),-2);
+
+
+
+select v.SQL_TEXT,
+               v.PARSING_SCHEMA_NAME,
+               v.FIRST_LOAD_TIME,
+               v.DISK_READS,
+               v.ROWS_PROCESSED,
+               v.ELAPSED_TIME,
+               v.service
+          from v$sql v
+    where to_date(v.FIRST_LOAD_TIME,'YYYY-MM-DD hh24:mi:ss')>ADD_MONTHS(trunc(sysdate,'DD'),-1);
+
+
+select v.SQL_TEXT,
+               v.PARSING_SCHEMA_NAME,
+               v.FIRST_LOAD_TIME,
+               v.DISK_READS,
+               v.ROWS_PROCESSED,
+               v.ELAPSED_TIME,
+               v.service
+          from v$sql v
+    where to_date(v.FIRST_LOAD_TIME,'YYYY-MM-DD hh24:mi:ss')>ADD_MONTHS(trunc(sysdate,'DD'),-1)
+   and v.PARSING_SCHEMA_NAME !='SYS'
+   and v.DISK_READS > 10 ;
+
+
+

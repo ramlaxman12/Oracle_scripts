@@ -1,0 +1,8 @@
+SQLNET.EXPIRE_TIME = 1
+SQLNET.INBOUND_CONNECT_TIMEOUT = 0
+automatic_ipc=on
+SEC_USER_AUDIT_ACTION_BANNER=/home/oracle/warning.txt
+SEC_USER_UNAUTHORIZED_ACCESS_BANNER=/home/oracle/warning2.txt
+tcp.validnode_checking = YES
+tcp.invited_nodes = (hostname1, hostname2)
+tcp.excluded_nodes = (192.168.10.3)

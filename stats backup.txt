@@ -1,0 +1,136 @@
+— create table to backup statistics, ownname is statistics table owner and stattab is statistics table name
+
+
+exec dbms_stats.import_table_stats(ownname=>'scott', tabname=>'emp', stattab=>'backup_sta', cascade=>true);
+
+ exec dbms_stats.export_table_stats(ownname=>'scott', tabname=>'emp1', stattab=>'backup_sta', cascade=>true);
+
+exec dbms_stats.create_stat_table(ownname=>'scott',stattab=>'stats_backup');
+
+
+
+ SQL> execute dbms_stats.create_stat_table(ownname=> 'scott', stattab=> 'backup_stats');
+
+PL/SQL procedure successfully completed.
+
+— procedure to export statistics, exports statistics scott.test into scott.backup_stats, cascade=>true means it will export index statistics too
+ SQL> exec sys.dbms_stats.export_table_stats(ownname=>'scott', tabname=>'emp', statown=>'sys', stattab=>'backup_stats', cascade=>true);
+
+PL/SQL procedure successfully completed.
+
+— import table stats
+ SQL> exec dbms_stats.import_table_stats(ownname=>'scott', tabname=>'test1', statown=>'scott', stattab=>'backup_stats', cascade=>true);
+
+PL/SQL procedure successfully completed.
+
+— drop statistics table
+ SQL> execute dbms_stats.drop_stat_table(ownname= 'scott', stattab= 'backup_stats');
+
+
+
+
+
+exec dbms_stats.copy_table_stats(user, 't1', srcpartname=>'p4', dstpartname=>'p5');
+
+
+http://docs.oracle.com/cd/B28359_01/appdev.111/b28419/d_stats.htm#sthref8237
+
+
+SQL> exec dbms_stats.create_stat_table(sys,'backup_table');
+
+ PL/SQL procedure successfully completed.
+
+Export EMP table stats to STATS_TABLE1
+
+ SQL> exec dbms_stats.export_table_stats(user,'EMP',NULL,'STATS_TABLE1');
+
+ PL/SQL procedure successfully completed.
+
+Cross check stats available in stats_table1:
+
+ SQL> select distinct c1 from stats_table1 where type='T';
+
+ C1
+ ------------------------------                                                  
+ EMP
+
+Delete existing table stats
+
+ SQL> exec dbms_stats.delete_table_stats('scott','emp');
+
+ PL/SQL procedure successfully completed.
+
+Cross check stats doesn't exists
+
+ SQL> select table_name,NUM_ROWS,LAST_ANALYZED from user_tables where table_name like 'EMP';
+ TABLE_NAME                       NUM_ROWS LAST_ANAL
+ ------------------------------ ---------- ---------                             
+ EMP
+
+Import Table stats:
+
+ SQL> exec dbms_stats.import_table_stats('emp','backup_stats');
+
+ PL/SQL procedure successfully completed.
+
+Now, stats are back again. Cross check using:
+
+ SQL> select table_name,NUM_ROWS,LAST_ANALYZED from user_tables where table_name like 'SCOTT.EMP';
+
+ TABLE_NAME                       NUM_ROWS LAST_ANAL
+ ------------------------------ ---------- ---------                             
+ EMP                                    14 18-JAN-13
+
+You can also use below queries for Export and import Schema stats:
+
+ SQL> exec dbms_stats.export_schema_stats(user,'stats_table1');
+
+ PL/SQL procedure successfully completed.
+
+
+
+exec dbms_stats.gather_schema_stats( ownname => 'sys', options => 'GATHER AUTO', estimate_percent =>'100');
+Here is another dbms_stats example that creates histograms on all indexes columns:
+
+BEGIN
+dbms_stats.gather_schema_stats(
+ownname=>'scott',
+CASCADE=>TRUE,
+ESTIMATE_PERCENT=>100);
+END;
+/
+
+
+
+exec dbms_stats.gather_schema_stats( - 
+  ownname          => 'SCOTT', - 
+  options          => 'GATHER AUTO', - 
+  estimate_percent => dbms_stats.auto_sample_size, - 
+  method_opt       => 'for all columns size repeat', - 
+  degree           => 3 - 
+   )
+
+
+execute dbms_stats.GATHER_TABLE_STATS(OWNNAME=> 'sys', GRANULARITY=> 'ALL', TABNAME=> 'emp', no_invalidate=>false, degree=>2, cascade=>true, estimate_percent=>30);
+
+
+SELECT TABLE_NAME, NUM_ROWS, BLOCKS, AVG_ROW_LEN,
+     TO_CHAR(LAST_ANALYZED, 'MM/DD/YYYY HH24:MI:SS')
+     FROM DBA_TABLES where table_name='EMP';
+
+
+SELECT TABLE_NAME, NUM_ROWS, BLOCKS, AVG_ROW_LEN,
+     TO_CHAR(LAST_ANALYZED, 'MM/DD/YYYY HH24:MI:SS')
+     FROM DBA_TABLES where owner='SCOTT'
+
+
+exec dbms_stats.import_table_stats(ownname=>'scott', tabname=>'emp', stattab=>'backup_sta', cascade=>true);
+
+ exec dbms_stats.export_table_stats(ownname=>'scott', tabname=>'emp1', stattab=>'backup_sta', cascade=>true);
+
+exec dbms_stats.create_stat_table(ownname=>'sys',stattab=>'stats_backup');
+
+
+ SQL> exec dbms_stats.import_schema_stats(user,'stats_table1');
+
+ PL/SQL procedure successfully completed.                               

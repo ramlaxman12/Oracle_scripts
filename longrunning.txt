@@ -1,0 +1,54 @@
+COL MODULE for a10
+COL Logon for a20
+col MACHINE for a10
+col EVENT for a30
+col OSUSER for a15
+col TERMINAL for a10
+set lines 200
+
+
+SELECT
+--s.status,
+s.sid,
+s.SQL_ID,
+substr(s.module,1,10) Module,
+to_char(s.LOGON_TIME,'dd/mm/yyyy HH24:mi') Logon,
+s.type,
+s.event,
+round(s.LAST_CALL_ET/60) ActiveMins,
+s.osuser,
+s.terminal,
+substr(s.MACHINE,1,10) Machine
+  FROM v$session s
+    where  type ='USER'
+    and status ='ACTIVE'
+    and s.LAST_CALL_ET > 5 * 60
+    order by 7 desc ;
+
+
+select SQL_FULLTEXT from gv$sql where sql_id='&SQLid'
+/
+
+select 'alter system disconnect session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE sid=&SID
+/
+
+
+
+
+##############################################################################################################################
+
+
+set lines 200 pages 200
+col SOFAR format 99999999999999999
+col TOTALWORK format 9999999999999999
+col username format a12
+col event format a21
+select s.sid,s.username,l.SOFAR,l.TOTALWORK,substr(s.program,1,15),round(l.SOFAR*100/l.TOTALWORK) "Percent Complete", l.TIME_REMAINING
+from v$session_longops l,v$session s
+where round(l.SOFAR*100/l.TOTALWORK) <> 100
+and s.sid=l.sid
+and s.status='ACTIVE'
+and l.TOTALWORK <> 0
+order by 6;
+
+

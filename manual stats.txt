@@ -1,0 +1,87 @@
+
+SELECT CLIENT_NAME,STATUS FROM DBA_AUTOTASK_CLIENT;
+
+select OWNER,TABLE_NAME,NUM_ROWS,SAMPLE_SIZE,LAST_ANALYZED,STALE_STATS,STATTYPE_LOCKED from dba_tab_statistics where STALE_STATS='YES' AND OWNER=<'OWNER_NAME'>;
+select owner,segment_name,SEGMENT_TYPE,TABLESPACE_NAME,BYTES/1024/1024 from dba_segments where segment_name in (<‘TABLE_NAME’>);
+
+
+
+set lines 200 pages 200
+select * from dba_scheduler_programs where program_name='MANUALGATHERSTAT';
+
+ select log_date
+, job_name
+, status
+from dba_scheduler_job_log where job_name='MANUALGATHERSTATJOB' order by log_date desc;
+
+ select log_date
+, job_name
+, status
+from dba_scheduler_job_log where job_name='MANUALGATHERSTATJOB' order by log_date desc;
+
+
+select log_date
+ , job_name
+ , status
+ , req_start_date
+ , actual_start_date
+ , run_duration
+ from dba_scheduler_job_run_details
+where job_name='MANUALGATHERSTAT';
+
+
+SELECT DBMS_METADATA.GET_DDL('', '') FROM DUAL;
+
+
+
+ select owner,table_name,to_char(last_analyzed,'YYYY-MM-DD HH24:MI:SS') from dba_tables where owner='ACS' order by 3 asc;
+
+
+
+select owner,table_name,to_char(last_analyzed,'YYYY-MM-DD HH24:MI:SS') from dba_tables where owner='MPI' order by 3 asc;
+
+
+SELECT DBMS_METADATA.GET_DDL('MANUALGATHERSTATJOB', 'SCHEDULE') FROM DUAL;
+
+SELECT DBMS_METADATA.GET_DDL('HELP','MANUALGATHERSTATSCHEDULE') DDL FROM dual;
+
+select dbms_metadata.get_ddl('PROCOBJ','MANUALGATH','SVCG') from dual;
+
+
+SELECT DBMS_METADATA.GET_DDL('PROCOBJ', ' MANUALGATHERSTATJOB') FROM DUAL;
+
+
+
+########################DBMS schedule jobs#####################################
+BEGIN
+  DBMS_SCHEDULER.DROP_PROGRAM
+    (program_name          => 'SYS.MANUALGATHERSTAT');
+END;
+/
+
+BEGIN SYS.DBMS_SCHEDULER.CREATE_PROGRAM    (
+program_name         => 'MANUALGATHERSTAT',
+program_type         => 'PLSQL_BLOCK',
+program_action       => 'BEGIN dbms_stats.gather_schema_stats(ownname => 'SVISTA',cascade => TRUE,estimate_percent=> 20,degree=> 2,GRANULARITY => 'all'); dbms_stats.gather_schema_stats(ownname => 'SVWEB',cascade => TRUE,estimate_percent=> 100,degree=> 2,GRANULARITY => 'all'); END;',
+number_of_arguments  => 0
+enabled              => TRUE
+comments           => 'Program to gather svista and svweb statistics'
+);
+
+I guess the schedule will be the same, if it is impacting your job window we can change it.
+
+Scheduling procedure.
+======================
+BEGIN DBMS_SCHEDULER.create_schedule (
+schedule_name   => 'MANUALGATHERSTATSCHEDULE',
+start_date   => SYSTIMESTAMP,
+repeat_interval   => 'FREQ=DAILY;BYHOUR=03',
+end_date   => NULL,
+comments   => 'Repeats Every Dat at 3am'
+);
+END;
+
+  SYS.DBMS_SCHEDULER.ENABLE
+    (name                  => 'SYS.MANUALGATHERSTAT');
+END;
+/

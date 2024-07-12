@@ -1,0 +1,24 @@
+set time on
+set scan off 
+ALTER SESSION ENABLE RESUMABLE TIMEOUT 3600;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel query;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel ddl;
+
+Session altered.
+
+22:16:09 SQL> alter session force parallel dml;
+
+Session altered.
+
+set time on
+set scan off 
+ALTER SESSION ENABLE RESUMABLE TIMEOUT 3600;
+alter session force parallel query;
+alter session force parallel ddl;
+alter session force parallel dml; 

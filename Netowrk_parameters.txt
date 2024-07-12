@@ -1,0 +1,6 @@
+Network parameters in DB and APP Servers
+INBOUND_CONNECT_TIMEOUT_<Listener_name> = 0 --> in listener of DB Server.
+SQLNET.EXPIRE_TIME = 0 -->in sqlnet.ora of DB/APP servers.
+SQLNET.INBOUND_CONNECT_TIMEOUT = 0  --> in sqlnet.ora of DB server.
+SQLNET.OUTBOUND_CONNECT_TIMEOUT = 0 --> in sqlnet.ora of APP servers.
+automatic_ipc=on --> in sqlnet.ora of DB server. 

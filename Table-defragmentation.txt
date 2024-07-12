@@ -1,0 +1,68 @@
+
+set linesize 200 pagesize 200
+col total_size for a10
+col actual_size for a20
+col FRAGMENTED_SPACE for a20
+select table_name,avg_row_len,round(((blocks*16/1024)),2)||'MB' "TOTAL_SIZE",
+    round((num_rows*avg_row_len/1024/1024),2)||'Mb' "ACTUAL_SIZE",
+    round(((blocks*16/1024)-(num_rows*avg_row_len/1024/1024)),2) ||'MB' "FRAGMENTED_SPACE"
+    from all_tables  WHERE table_name='&TABLE_NAME';
+
+***************************************************************************************************
+*******************************************************
+
+set linesize 200 pagesize 200
+col total_size for a10
+col actual_size for a20
+col FRAGMENTED_SPACE for a20
+select table_name,avg_row_len,round(((blocks*16/1024)),2)||'MB' "TOTAL_SIZE",
+    round((num_rows*avg_row_len/1024/1024),2)||'Mb' "ACTUAL_SIZE",
+    round(((blocks*16/1024)-(num_rows*avg_row_len/1024/1024)),2) ||'MB' "FRAGMENTED_SPACE",
+	(round(((blocks*16/1024)-(num_rows*avg_row_len/1024/1024)),2)/round(((blocks*16/1024)),2))*100 "percentage"
+    from all_tables  WHERE table_name='&TABLE_NAME';
+
+            
+
+Step1: Find the list of indexes and Status
+select OWNER,INDEX_NAME,STATUS,TABLE_NAME from dba_indexes where TABLE_NAME='&tablename' and owner='&owner';
+
+Step2:Fire below command
+alter table table_name move;
+
+Step3:Rebuild the Indexes                                               
+select 'alter index '||INDEX_NAME||' rebuild online;' from dba_indexes where TABLE_NAME='&table_name';
+
+Step4:Gather the Stats
+EXEC DBMS_STATS.GATHER_TABLE_STATS('&SCHEMA','&TABLE');
+
+
+******************************************************************
+***************************************************************************************************
+
+https://support.oracle.com/epmos/faces/DocumentDisplay?_afrLoop=428943860255914&id=561447.1&displayIndex=6&_afrWindowMode=0&_adf.ctrl-state=sjjcukv05_168
+
+
+::To Find Highwater Mark on Which datafile::
+
+select a.tablespace_name, a.file_name,(b.maximum+c.blocks-1)*d.db_block_size highwater
+from dba_data_files a ,(select file_id,max(block_id) maximum
+from dba_extents group by file_id) b
+,dba_extents c
+,(select value db_block_size from v$parameter
+where name='db_block_size') d
+where a.file_id = b.file_id
+and c.file_id = b.file_id
+and c.block_id = b.maximum
+and a.tablespace_name='&TEST'
+/
+
+++++++++++++++++++++++++
+
+SELECT owner, segment_name, segment_type, tablespace_name, file_id,
+2 ((block_id+1)*(SELECT value FROM v$parameter WHERE UPPER(name)='DB_BLOCK_SIZE')+ BYTES)
+end_of_extent_is_at_this_byte
+3 FROM dba_extents WHERE ((block_id+1)*
+4 (SELECT value FROM v$parameter WHERE UPPER(name)='DB_BLOCK_SIZE')+BYTES) > (11*1024*1024)
+5 AND tablespace_name='TEST' ORDER BY file_id, end_of_extent_is_at_this_byte;
+
+*************************************************************************************************

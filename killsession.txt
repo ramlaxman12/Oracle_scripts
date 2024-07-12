@@ -1,0 +1,80 @@
+set linesize 200
+col a.event for a50
+Select a.event, a.total_waits, a.time_waited, a.average_wait
+From v$system_event a, v$event_name b, v$system_wait_class c
+Where a.event_id=b.event_id
+And b.wait_class#=c.wait_class#
+And c.wait_class in ('Application','Concurrency')
+order by average_wait desc;
+
+
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et  between 300 and 360;
+
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et  between 360 and 480;
+
+Select 'alter system disconnect session ''' || sid ||',' || serial# ||',@'||INST_ID|| ''' immediate;' from Gv$session WHERE sql_id='&4adssu7t2d61t';
+
+status='INACTIVE' and last_call_et  
+
+
+select s1.username || '@' || s1.machine
+|| ' ( SID=' || s1.sid || ' ) is blocking '
+|| s2.username || '@' || s2.machine || ' ( SID=' || s2.sid || ' ) ' AS blocking_status
+from v$lock l1, v$session s1, v$lock l2, v$session s2
+where s1.sid=l1.sid and s2.sid=l2.sid
+and l1.BLOCK=1 and l2.request > 0
+and l1.id1 = l2.id1
+and l2.id2 = l2.id2 ;
+
+
+select sid, serial#, username,
+  to_char(sysdate-last_call_et/24/60/60,'hh24:mi:ss') started,
+  trunc(last_call_et/60) || ' mins, ' || mod(last_call_et,60) ||' secs' dur, last_call_et
+   from v$session
+  where USERNAME<>'SYS' and username is not null order by 5;
+
+Select 'alter system disconnect session ''' || sid ||',' || serial# ||',@'||INST_ID|| ''' immediate;' from Gv$session where status='INACTIVE' and last_call_et  between 30 and 300 and USERNAME<>'SYS'; and username is not null;
+
+
+select sid, serial#, username,
+  to_char(sysdate-last_call_et/24/60/60,'hh24:mi:ss') started,
+  trunc(last_call_et/60) || ' mins, ' || mod(last_call_et,60) ||' secs' dur, last_call_et
+   from v$session
+  where username is not null order by 5;
+
+############## durga  msil################
+
+
+select EVENT,count(*) from v$session
+where osuser='oracle'
+and   module is null
+and   status='ACTIVE'
+group by EVENT;
+
+
+
+
+
+col NAME for a20
+col INTERVAL_SIZE for a40
+set linesize 200
+select * from v$metricgroup;
+
+
+
+set lines 190 pages 1000
+col KILL_STATEMENTS for a78
+col PROGRAM for a30
+col module for a20
+col session_status format a15
+
+select s.INST_ID,s.status as session_status,substr(s.module,1,10) module , substr(s.program,1,15) Program, round(s.last_call_et/60) min,('alter system disconnect session ''' || s.sid || ',' || s.serial# || ''' immediate;') as "KILL_STATEMENTS"
+FROM gv$session s, gv$process p
+WHERE s.paddr = p.addr
+AND s.USERNAME<>'SYS' order by 1,5;
+
+
+AND S.SID in (
+             SELECT sid  FROM v$lock WHERE (id1, id2, TYPE) IN (SELECT id1, id2, TYPE FROM v$lock WHERE request>0)
+) order by 1,4
+/

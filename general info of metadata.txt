@@ -1,0 +1,45 @@
+###########to see max session limit##################################
+
+select LIMIT_VALUE,CURRENT_UTILIZATION from v$resource_limit where RESOURCE_NAME='sessions';
+
+select resource_name, current_utilization, max_utilization, limit_value 
+    from v$resource_limit 
+    where resource_name in ('sessions', 'processes');
+
+##############auto operations like stats################################
+
+SELECT client_name, status FROM dba_autotask_operation;
+ 
+SQL> SELECT CLIENT_NAME,STATUS FROM DBA_AUTOTASK_CLIENT;
+
+SELECT * FROM dba_autotask_schedule;
+
+#################################################################################################################################################
+
+select OWNER,TABLE_NAME,NUM_ROWS,SAMPLE_SIZE,LAST_ANALYZED,STALE_STATS,STATTYPE_LOCKED from dba_tab_statistics where STALE_STATS='YES' AND OWNER=<'OWNER_NAME'>;
+
+select owner,segment_name,SEGMENT_TYPE,TABLESPACE_NAME,BYTES/1024/1024 from dba_segments where segment_name in (<‘TABLE_NAME’>);
+
+
+EXEC dbms_auto_task_admin.disable( 'auto optimizer stats collection', NULL, NULL );
+
+######to diable all tasks#########################################
+EXEC dbms_auto_task_admin.disable;
+
+
+
+################################  stats gathering using analyze ##########################
+
+set timing on;
+
+select to_char(sysdate,'DD/MM/YYYY hh24:mi:ss') "CURRENT_TIME" from dual;
+
+ANALYZE TABLE SVISTA.ACCT_HOLD_AMOUNT_TAB VALIDATE STRUCTURE CASCADE ONLINE;
+
+select to_char(sysdate,'DD/MM/YYYY hh24:mi:ss') "CURRENT_TIME" from dual;
+
+ALTER INDEX SVISTA.ACCT_HOLD_INDX REBUILD ONLINE;
+
+select to_char(sysdate,'DD/MM/YYYY hh24:mi:ss') "CURRENT_TIME" from dual;
+
+

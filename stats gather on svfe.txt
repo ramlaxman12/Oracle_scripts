@@ -1,0 +1,135 @@
+
+
+analyze table username.SI_DMSD_AMND_TBD validate structure cascade;
+
+#######oracle recomendation ###############################
+
+SQL> select DBMS_STATS.GET_PREFS('INCREMENTAL','MULDMS','SI_DMSD_AMND_TBD') from dual;
+
+SQL> select DBMS_STATS.GET_PREFS('PUBLISH','MULDMS','SI_DMSD_AMND_TBD') from dual;
+
+To set these parameters, you can use the following:
+
+
+exec DBMS_STATS.SET_TABLE_PREFS ('<owner_name>', '<table_name>','INCREMENTAL', 'TRUE');
+
+exec DBMS_STATS.SET_TABLE_PREFS ('<owner_name>', '<table_name>','PUBLISH', 'TRUE');
+
+###################dba schedule jobs####################################
+
+
+set lines 210 pages 200
+col owner format a10
+col JOB_NAME format a30
+col JOB_TYPE format a16
+col REPEAT_INTERVAL format a30
+col NEXT_RUN_DATE format a40
+select OWNER,JOB_NAME,JOB_TYPE,REPEAT_INTERVAL,NEXT_RUN_DATE from dba_scheduler_jobs;
+
+###########################Verifying Column Statistics####################
+
+SELECT COLUMN_NAME, NUM_DISTINCT, NUM_NULLS, NUM_BUCKETS, DENSITY
+FROM DBA_TAB_COL_STATISTICS
+WHERE TABLE_NAME ="&tablename"
+ORDER BY COLUMN_NAME;
+
+###############Verifying Index Statistics###########################
+select OWNER,TABLE_NAME,NUM_ROWS,SAMPLE_SIZE,LAST_ANALYZED,STALE_STATS,STATTYPE_LOCKED from dba_tab_statistics;
+
+SELECT INDEX_NAME "NAME", NUM_ROWS, DISTINCT_KEYS "DISTINCT",
+  LEAF_BLOCKS, CLUSTERING_FACTOR "CF", BLEVEL "LEVEL",
+  AVG_LEAF_BLOCKS_PER_KEY "ALFBPKEY"
+  FROM DBA_INDEXES
+  WHERE owner = '&ownername'
+  ORDER BY INDEX_NAME;
+
+####################Verifying Table Statistics##########################
+
+SELECT TABLE_NAME, NUM_ROWS, BLOCKS, AVG_ROW_LEN,
+     TO_CHAR(LAST_ANALYZED, 'MM/DD/YYYY HH24:MI:SS')
+     FROM DBA_TABLES
+     WHERE TABLE_NAME IN (' CURR_TRANS','ACCT_TAB','CARD_ACCT_TAB','ACCT_HOLD_AMOUNT_TAB','STTL_TAB ');
+
+###########################Verifying Column Statistics####################
+
+SELECT COLUMN_NAME, NUM_DISTINCT, NUM_NULLS, NUM_BUCKETS, DENSITY
+FROM DBA_TAB_COL_STATISTICS
+WHERE TABLE_NAME ="&tablename"
+ORDER BY COLUMN_NAME;
+
+###############Verifying Index Statistics###########################
+
+SELECT TABLE_NAME,owner,INDEX_NAME "NAME", NUM_ROWS, DISTINCT_KEYS "DISTINCT",
+  LEAF_BLOCKS, CLUSTERING_FACTOR "CF", BLEVEL "LEVEL",
+  AVG_LEAF_BLOCKS_PER_KEY "ALFBPKEY"
+  FROM DBA_INDEXES
+  WHERE TABLE_NAME = '&tablename'
+  ORDER BY INDEX_NAME;
+
+####################Verifying Table Statistics##########################
+
+SELECT TABLE_NAME, NUM_ROWS, BLOCKS, AVG_ROW_LEN,
+     TO_CHAR(LAST_ANALYZED, 'MM/DD/YYYY HH24:MI:SS')
+     FROM DBA_TABLES
+     WHERE TABLE_NAME IN (' CURR_TRANS','ACCT_TAB','CARD_ACCT_TAB','ACCT_HOLD_AMOUNT_TAB','STTL_TAB ');
+============================================================example for stata gather  of a table===============================================================
+execute dbms_stats.GATHER_TABLE_STATS(OWNNAME=> 'SVISTA', GRANULARITY=> 'ALL', TABNAME=> 'CURR_TRANS', no_invalidate=>false, degree=>2, cascade=>true, estimate_percent=>30);
+
+execute dbms_stats.GATHER_TABLE_STATS(OWNNAME=> 'SVISTA', GRANULARITY=> 'ALL', TABNAME=> 'ACTIVE_KEY', no_invalidate=>false, degree=>2, cascade=>true, estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE);
+
+
+Note your own session ID before executing it. Any of the below query will help to get your own session ID.
+===================================================================================
+select sys_context('USERENV','SID') from dual;
+select sid from v$mystat where rownum <=1;
+select to_number(substr(dbms_session.unique_session_id,1,4),'XXXX') mysid from dual;
+select distinct sid from v$mystat;
+ 
+########### To find user from sid########################
+
+select s.sid,p.pid from v$session s,v$process p where p.addr=s.paddr and s.sid='&sid';
+
+select sid,username from v$session where paddr in (select addr from v$process where spid=&PID);
+
+############It give SQL Query which is run by SID#################
+
+SQL>select a.sql_text, a.hash_value from v$sqltext_with_newlines a where a.hash_value in ( (select decode(sql_hash_value,'0', prev_hash_value,sql_hash_value) hash_value from v$session where sid=&sid)) order by a.piece;
+
+############## to get execution plane for sql statement#############
+
+SQL>select * from table(dbms_xplan.display_cursor('&SQL_ID'));
+
+###############wait events on server to find#######################
+
+select EVENT,count(*) from v$session
+where osuser='oracle'
+and   module is null
+and   status='ACTIVE'
+group by EVENT;
+
+
+SELECT * FROM v$system_event
+ WHERE event LIKE '%control%';
+v$session_wait
+
+##############It show different types of events and number of running event at that time###############
+
+SQL>select event,count(*) from v$session group by event order by 2;
+
+
+############### It will give remaining time for the long running query #################################
+
+SQL>SELECT SID, SERIAL#,OPNAME, CONTEXT, SOFAR, TOTALWORK,ROUND(SOFAR/TOTALWORK*100,2) "%_COMPLETE" FROM V$SESSION_LONGOPS WHERE OPNAME NOT LIKE '%aggregate%' AND TOTALWORK != 0 AND SOFAR <> TOTALWORK;
+				
+
+                                                                                              OR
+SQL>set lines 300
+SQL>col TARGET for a40
+SQL>col SQL_ID for a20
+SQL>select SID,TARGET||OPNAME TARGET, TOTALWORK, SOFAR,TIME_REMAINING/60 Mins_Remaining,ELAPSED_SECONDS,SQL_ID from v$session_longops where TIME_REMAINING>0 order by TIME_REMAINING;
+
+#########################It gives from which application server or program run behind the SID or SQI_ID ##################
+
+SQL>select username,osuser ,sid,sql_id,MACHINE,PROGRAM from v$session where SID='&SID';
+				OR
+SQL>select username,osuser ,sid,sql_id,MACHINE,PROGRAM from v$session where SQL_ID='&SQL_ID';

@@ -1,0 +1,177 @@
+###################     to find dbms jobs runned today      ###############################
+SET LINESIZE 120
+COLUMN job_name FORMAT A20
+COLUMN destination FORMAT A20
+COLUMN actual_start_date FORMAT A20
+COLUMN run_duration FORMAT A20
+COLUMN status FORMAT A10
+
+SELECT job_name,
+       destination,
+       TO_CHAR(SYSDATE, 'dd-mm-yy hh24:mi:Ss') AS actual_start_date,
+       run_duration,
+       status,
+       error#
+FROM   user_scheduler_job_run_details
+--where owner='*'
+ORDER BY actual_start_date;
+
+
+###################  to know all schedule jobs in database ######################################
+
+
+set lines 210 pages 200
+col owner format a10
+col JOB_NAME format a30
+col JOB_TYPE format a16
+col REPEAT_INTERVAL format a30
+col NEXT_RUN_DATE format a40
+select OWNER,JOB_NAME,JOB_TYPE,REPEAT_INTERVAL,NEXT_RUN_DATE,MAX_RUN_DURATION from dba_scheduler_jobs where JOB_NAME='MANUALGATHERSTATJOB';
+
+#####################   when we know job name    ###############################################
+SET LINESIZE 120
+COLUMN job_name FORMAT A20
+COLUMN destination FORMAT A20
+COLUMN actual_start_date FORMAT A20
+COLUMN run_duration FORMAT A20
+COLUMN status FORMAT A10
+
+SELECT job_name,
+       destination,
+       TO_CHAR(SYSDATE, 'dd-mm-yy hh24:mi:Ss') AS actual_start_date,
+       run_duration,
+       status,
+       error#
+FROM   user_scheduler_job_run_details
+WHERE  job_name='MANUALGATHERSTATJOB'
+ORDER BY actual_start_date;
+
+
+###########copied from server##################
+
+$>cat job_duration_pk.sql
+
+
+prompt "Job execution time in past"
+SET LINESIZE 120
+COLUMN job_name FORMAT A20
+COLUMN destination FORMAT A20
+COLUMN actual_start_date FORMAT A20
+COLUMN run_duration FORMAT A20
+COLUMN status FORMAT A10
+SELECT job_name,
+destination,
+TO_CHAR(actual_start_date, 'DD-MON-YYYY HH24:MI:SS') AS actual_start_date,
+run_duration,
+status,
+error#
+FROM   user_scheduler_job_run_details
+WHERE  job_name like '&job_name'
+ORDER BY actual_start_date;
+
+Prompt "Running Scheduled Job"
+set line 350
+col CREDENTIAL_NAME format a15
+col destination for a15
+col JOB_SUBNAME for a6
+col ELAPSED_TIME format a25
+col DESTINATION_OWNER format a25
+col CPU_USED format a25
+select * from DBA_SCHEDULER_RUNNING_JOBS;
+prompt "status from dba_job"
+select * from dba_jobs_running;
+
+
+
+
+
+#############################################
+
+
+DBA_SCHEDULER_JOBS, 
+DBA_SCHEDULER_SCHEDULES, DBA_SCHEDULER_PROGRAMS,
+ DBA_SCHEDULER_JOB_CLASSES, DBA_JOBS.
+
+SELECT job_name, count(job_name),owner,log_date, status, actual_start_date, run_duration, cpu_used FROM dba_scheduler_job_run_details 
+where owner='SYS' group by job_name;
+select log_date
+ , job_name
+ , status
+ , req_start_date
+ , actual_start_date
+ , run_duration
+ from dba_scheduler_job_run_details where job_name='&job_name';
+
+ To show running jobs:
+
+ select job_name
+ , session_id
+ , running_instance
+ , elapsed_time
+ , cpu_used
+ from dba_scheduler_running_jobs;
+
+ To show job history:
+ select log_date
+ , job_name
+ , status
+ from dba_scheduler_job_log  where job_name='VISTA_AUTO_STATS';order by log_date;
+
+select STATE from dba_scheduler_jobs where JOB_NAME='&MANUALGATHERSTATJOB';
+
+select JOB_NAME,SCHEDULE_NAME,SCHEDULE_TYPE,PROGRAM_NAME from dba_scheduler_jobs where program_name='MANUALGATHERSTAT';
+
+
+ show all schedules:
+col REPEAT_INTERVAL for a20
+col START_DATE for a20
+select schedule_name, schedule_type, start_date, repeat_interval 
+ from dba_scheduler_schedules; where ;
+
+ show all jobs and their attributes:
+col job_action for a40
+col PROGRAM_NAME for a20
+col job_name for a30
+set linesize 200
+set pagesize 200
+select JOB_ACTION,PROGRAM_NAME,SCHEDULE_TYPE,JOB_NAME,REPEAT_INTERVAL from dba_scheduler_jobs;
+
+
+ show all program-objects and their attributes
+col PROGRAM_ACTION for a50
+select PROGRAM_ACTION,PROGRAM_NAME from dba_scheduler_programs where program_name='GATHERSTATJOB';;
+
+ show all program-arguments:
+ select *
+ from dba_scheduler_program_args;
+
+
+
+
+SET LINESIZE 120
+COLUMN job_name FORMAT A20
+COLUMN destination FORMAT A20
+COLUMN actual_start_date FORMAT A20
+COLUMN run_duration FORMAT A20
+COLUMN status FORMAT A10
+SELECT job_name,
+       destination,
+       TO_CHAR(SYSDATE, 'dd-mm-yy hh24:mi:Ss') AS actual_start_date,
+       run_duration,
+       status,
+       error#
+FROM   user_scheduler_job_run_details
+ORDER BY actual_start_date;
+
+
+SELECT TO_CHAR(SYSDATE, 'dd-mm-yy hh24:mi:Ss') from dual;
+SELECT TO_CHAR(SYSDATE -1, 'dd-mm-yy hh24:mi:Ss') from dual;
+	
+
+
+
+
+
+
+
+172.30.10.67

@@ -1,0 +1,201 @@
+
+###########cpu usage and sid only by me##################
+
+select 
+ ss.username, 
+ se.SID, 
+ VALUE/100 cpu_usage_seconds 
+from 
+ v$session ss, 
+ v$sesstat se, 
+ v$statname sn 
+where 
+ se.STATISTIC# = sn.STATISTIC# 
+and 
+ NAME like '%CPU used by this session%' 
+and 
+ se.SID = ss.SID 
+and 
+ ss.status='ACTIVE' 
+and 
+ ss.username is not null 
+order by VALUE desc; 
+
+
+#################cpu usage and spid,sid by vneki######################
+
+
+set lines 200 pages 1000
+col SPID for a6
+col USERNAME for a20
+col MACHINE for a10
+col LOGON_TIME for a20
+col LAST_CALL_ET for 999999
+col SQL_TEXT for a50
+
+SELECT /*+ ordered */ p.spid, s.sid, s.serial#, s.username,s.machine, 
+TO_CHAR(s.logon_time, 'mm-dd-yyyy hh24:mi') logon_time, s.last_call_et, st.value, 
+s.sql_hash_value, s.sql_address, sq.sql_text  
+FROM v$statname sn, v$sesstat st, v$process p, v$session s,  v$sql sq  
+WHERE s.paddr=p.addr  
+AND s.sql_hash_value = sq.hash_value and s.sql_Address = sq.address  
+AND s.sid = st.sid 
+AND st.STATISTIC# = sn.statistic# 
+AND sn.NAME = 'CPU used by this session' 
+AND s.status = 'ACTIVE' 
+ORDER BY st.value desc ;
+
+
+########## for msil database##################
+col USERNAME for a15
+col MODULE for a25
+col TERMINAL for a15
+col "Current SQL" for a140
+col "UNIX PID" for 9999999
+COL "Current SQL" FOR A30
+set lines 300
+
+SELECT * FROM
+(SELECT count(*), p.spid "UNIX PID", s.username, s.module, s.sid, s.serial#, q.SQL_TEXT "Current SQL" 
+FROM v$active_session_history h, v$session s, v$sql q, v$process p 
+WHERE
+h.session_id = s.sid
+AND h.session_serial# = s.serial#
+AND session_state= 'ON CPU'
+AND p.addr = s.paddr
+AND q.sql_id=s.PREV_SQL_ID
+AND sample_time > sysdate - interval '15' minute
+GROUP BY p.spid,s.username, s.module, s.sid, s.serial#,q.SQL_TEXT
+ORDER BY count(*) desc) where rownum <= 5;
+
+
+
+
+select sid, serial#, username, status, sql_id from v$session where status = 'ACTIVE' and username is not null;
+
+
+SELECT sql_text FROM v$sqlarea WHERE sql_id = '&sql_id';
+
+SELECT a.sid,a.serial#,a.username, b.sql_text,a.machine,a.osuser 
+  FROM gv$session a, gv$sqlarea b, gv$process c   WHERE (c.spid = '&PID')  AND a.paddr = c.addr
+	AND a.sql_address = b.address;
+
+
+###################need to work on this##################
+select p.pid,p.spid,p.username,s.sid,s.status from v$process p,v$session s where s.status='ACTIVE' and username is not null and p.sid=s.sid and spid='&spid';
+
+
+
+#####################cpu memory usage ############ we need to give SID here from above command###############
+
+
+PROMPT Display session &1 memory usage from v$process_memory....
+SELECT
+    s.sid,pm.*
+FROM 
+    v$session s
+  , v$process p
+  , v$process_memory pm
+WHERE
+    s.paddr = p.addr
+AND p.pid = pm.pid
+AND s.sid IN (&1)
+ORDER BY
+    sid
+  , category;
+
+
+############ cpu memory usage when we get pid from TOP command####### spid  #####################
+
+
+SELECT
+    s.sid,p.spid,pm.*
+FROM 
+    v$session s
+  , v$process p
+  , v$process_memory pm
+WHERE
+    s.paddr = p.addr
+AND p.pid = pm.pid
+AND p.spid IN (&1)
+ORDER BY
+    sid
+  , category;
+
+
+
+select sid,serial#, SQL_ID from v$session where sid='&sid';
+SELECT s.sid,s.serial#,a.sql_text FROM v$session s,v$sqlarea a WHERE a.sql_id = '&sql_id';
+select l.START_TIME,l.TOTALWORK,l.SID,l.TIME_REMAINING,s.serial#,a.sql_text  from v$session_longops l,v$session s,v$sqlarea awhere TIME_REMAINING > 1;
+
+
+
+
+
+##############when we know sid  #############
+
+
+SELECT sid
+  , qcinst_id,qcsid,sql_id,sql_exec_start
+  , operation_type wrka_operation_type
+  , operation_id plan_line, policy
+  , ROUND(active_time/1000000,1) active_sec
+  , actual_mem_used
+  , max_mem_used
+  , work_area_size
+  , number_passes
+  , tempseg_size
+  , tablespace
+FROM v$sql_workarea_active 
+WHERE sid=(&sid)
+ORDER BY
+    sid
+  , sql_hash_value
+  , operation_id;
+
+
+
+###########################inactive users  ##########################################
+
+Col program for a10
+Col osuser  for a10
+Col machine for a10
+Col username for a10
+select sid,serial#,program,username,osuser,machine,status,to_char(logon_time,'dd/mon/yyyy hh24:mi:ss') from v$session where username is not null
+and status='INACTIVE';
+
+
+
+###############inactive sesson###########################
+select v$session.sid,v$session.serial#,v$process.spid,
+v$session.username,
+floor(last_call_et/3600)||':'||
+floor(mod(last_call_et,3600)/60)||':'||
+mod(mod(last_call_et,3600),60) "IDLE",
+v$session.logon_time LogonTime,
+v$session.machine,v$session.program,v$session.status,v$session.saddr
+from v$session, v$process
+where v$session.paddr = v$process.addr
+and v$session.username is not null
+--and v$session.status = 'INACTIVE'
+order by Idle desc
+/
+
+##########giveen by durga#################
+
+
+select EVENT,count(*) from v$session
+where osuser='oracle'
+and   module is null
+and   status='ACTIVE'
+group by EVENT;
+
+
+	
+
+
+
+
+
+
+

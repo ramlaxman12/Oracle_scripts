@@ -1,0 +1,80 @@
+col USERNAME for a10
+col MODULE for a20
+col TERMINAL for a15
+col "Current SQL" for a140
+col "UNIX PID" for a15
+COL "Current SQL" FOR A30
+col program for a20
+col sql_id for a20
+set lines 300
+--set pages 0
+
+SELECT * FROM
+(SELECT count(*) Cnt, p.spid "UNIX PID", s.sid, s.serial#, s.username,substr(s.module,1,14) Module, substr(s.program,1,14) Program, s.sql_id, q.SQL_TEXT "Current SQL"
+FROM v$active_session_history h, v$session s, v$sql q, v$process p
+WHERE
+h.session_id = s.sid
+AND h.session_serial# = s.serial#
+AND session_state= 'ON CPU'
+AND p.addr = s.paddr
+AND q.sql_id=s.SQL_ID
+AND sample_time > sysdate - interval '10' minute
+GROUP BY p.spid,  s.sid, s.serial#,s.username, s.module, s.program, s.sql_id, q.SQL_TEXT
+ORDER BY count(*) desc) where rownum <= 5;
+
+
+########################################################################################################
+
+
+col USERNAME for a10
+col MODULE for a20
+col TERMINAL for a15
+col "Current SQL" for a140
+col "UNIX PID" for a15
+COL "Current SQL" FOR A30
+col program for a20
+col sql_id for a20
+set lines 300
+--set pages 0
+
+SELECT * FROM
+(SELECT count(*) Cnt, p.spid "UNIX PID", s.sid, s.serial#, s.username,substr(s.module,1,14) Module, substr(s.program,1,16) Program, s.sql_id,s.sql_hash_value
+FROM v$active_session_history h, v$session s, v$sql q, v$process p
+WHERE
+h.session_id = s.sid
+AND h.session_serial# = s.serial#
+AND session_state= 'ON CPU'
+AND p.addr = s.paddr
+AND q.sql_id=s.SQL_ID
+AND sample_time > sysdate - interval '10' minute
+GROUP BY p.spid,  s.sid, s.serial#,s.username, s.module, s.program, s.sql_id, s.sql_hash_value
+ORDER BY count(*) desc) where rownum <= 20;
+
+--select sql_text from v$sql where sql_id='&SQL_ID';
+
+###################################################################################################################
+
+SELECT * FROM
+(SELECT count(*) Cnt, p.spid "UNIX PID", s.sid, s.serial#, s.username,substr(s.module,1,14) Module, substr(s.program,1,14) Program, s.sql_id, q.SQL_TEXT "Current SQL"
+FROM v$active_session_history h, v$session s, v$sql q, v$process p
+WHERE
+h.session_id = s.sid
+AND h.session_serial# = s.serial#
+AND session_state= 'ON CPU'
+AND p.addr = s.paddr
+AND q.sql_id=s.PREV_SQL_ID
+AND sample_time > sysdate - interval '10' minute
+AND q.SQL_text like '&SQLtxt'
+GROUP BY p.spid,  s.sid, s.serial#,s.username, s.module, s.program, s.sql_id, q.SQL_TEXT
+ORDER BY count(*) desc) where rownum <= 5
+/
+
+
+
+set head off
+set line 0
+select 'alter system disconnect  session ''' || sid ||',' || serial# || ''' immediate;' from v$session  where sql_id='&SQL_ID'
+/
+
+
+

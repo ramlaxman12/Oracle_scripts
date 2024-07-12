@@ -1,0 +1,223 @@
+col username for a12 
+col "QC SID" for A6 
+col "SID" for A6 
+col "QC/Slave" for A8 
+col "Req. DOP" for 9999 
+col "Actual DOP" for 9999 
+col "Slaveset" for A8 
+col "Slave INST" for A9 
+col "QC INST" for A6 
+set pages 300 lines 300 
+col wait_event format a30 
+select 
+decode(px.qcinst_id,NULL,username,  
+' - '||lower(substr(pp.SERVER_NAME, 
+length(pp.SERVER_NAME)-4,4) ) )"Username", 
+decode(px.qcinst_id,NULL, 'QC', '(Slave)') "QC/Slave" , 
+to_char( px.server_set) "SlaveSet", 
+to_char(s.sid) "SID", s.sql_id,
+to_char(px.inst_id) "Slave INST", 
+decode(sw.state,'WAITING', 'WAIT', 'NOT WAIT' ) as STATE,      
+case  sw.state WHEN 'WAITING' THEN substr(sw.event,1,30) ELSE NULL end as wait_event , 
+decode(px.qcinst_id, NULL ,to_char(s.sid) ,px.qcsid) "QC SID", pp.SPID,
+to_char(px.qcinst_id) "QC INST", 
+px.req_degree "Req. DOP", 
+px.degree "Actual DOP" 
+from gv$px_session px, 
+gv$session s , 
+gv$px_process pp, 
+gv$session_wait sw 
+where px.sid=s.sid (+) 
+and px.serial#=s.serial#(+) 
+and px.inst_id = s.inst_id(+) 
+and px.sid = pp.sid (+) 
+and px.serial#=pp.serial#(+) 
+and sw.sid = s.sid   
+and sw.inst_id = s.inst_id    
+order by 
+  decode(px.QCINST_ID,  NULL, px.INST_ID,  px.QCINST_ID), 
+  px.QCSID, 
+  decode(px.SERVER_GROUP, NULL, 0, px.SERVER_GROUP),  
+  px.SERVER_SET,  
+  px.INST_ID 
+/ 
+
+select distinct qcsid,count(*) from v$px_session group by qcsid;
+
+
+SELECT NAME, VALUE, ROUND((RATIO_TO_REPORT(VALUE) OVER ())*100, 2)|| '%' PERC 
+FROM V$SYSSTAT WHERE NAME LIKE 'Parallel%' ORDER BY NAME DESC;
+
+select status,count(status) from gv$px_process group by status;
+
+ WITH px_session AS (SELECT qcsid, qcserial#, MAX (degree) degree,
+  MAX (req_degree) req_degree,
+   COUNT ( * ) no_of_processes
+   FROM v$px_session p
+  GROUP BY qcsid, qcserial#)
+ SELECT s.sid, s.username, degree, req_degree, no_of_processes,
+  sql_text
+ FROM v$session s JOIN px_session p
+   ON (s.sid = p.qcsid AND s.serial# = p.qcserial#)
+  JOIN v$sql sql
+   ON (sql.sql_id = s.sql_id
+   AND sql.child_number = s.sql_child_number)
+  /
+
+
+
+The Oracle Database real-time monitoring feature enables you to monitor the performance of SQL statements while they are executing. SQL monitoring is automatically started when a SQL statement runs parallel or when it has consumed at least 5 seconds of CPU or I/O time for a single execution. See Oracle Database Performance Tuning Guide for more details.
+
+After your system has run for a few days, you should monitor parallel execution performance statistics to determine whether your parallel processing is optimal. Do this using any of the views discussed in this section.
+
+In Oracle Real Application Clusters, global versions of the views described in this section aggregate statistics from multiple instances. The global views have names beginning with G, such as GV$FILESTAT for V$FILESTAT, and so on.
+
+V$PX_BUFFER_ADVICE
+The V$PX_BUFFER_ADVICE view provides statistics on historical and projected maximum buffer usage by all parallel queries. You can consult this view to reconfigure SGA size in response to insufficient memory problems for parallel queries.
+
+V$PX_SESSION
+The V$PX_SESSION view shows data about query server sessions, groups, sets, and server numbers. It also displays real-time data about the processes working on behalf of parallel execution. This table includes information about the requested degree of parallelism (DOP) and the actual DOP granted to the operation.
+
+V$PX_SESSTAT
+The V$PX_SESSTAT view provides a join of the session information from V$PX_SESSION and the V$SESSTAT table. Thus, all session statistics available to a standard session are available for all sessions performed using parallel execution.
+
+V$PX_PROCESS
+The V$PX_PROCESS view contains information about the parallel processes, including status, session ID, process ID, and other information.
+
+V$PX_PROCESS_SYSSTAT
+The V$PX_PROCESS_SYSSTAT view shows the status of query servers and provides buffer allocation statistics.
+
+V$PQ_SESSTAT
+The V$PQ_SESSTAT view shows the status of all current server groups in the system such as data about how queries allocate processes and how the multiuser and load balancing algorithms are affecting the default and hinted values.
+
+You might need to adjust some parameter settings to improve performance after reviewing data from these views. In this case, refer to the discussion of "Tuning General Parameters for Parallel Execution". Query these views periodically to monitor the progress of long-running parallel operations.
+
+For many dynamic performance views, you must set the parameter TIMED_STATISTICS to TRUE in order for Oracle Database to collect statistics for each view. You can use the ALTER SYSTEM or ALTER SESSION statements to turn TIMED_STATISTICS on and off.
+
+V$PQ_TQSTAT
+As a simple example, consider a hash join between two tables, with a join on a column with only two distinct values. At best, this hash function has one hash value to parallel execution server A and the other to parallel execution server B. A DOP of two is fine, but, if it is four, then at least two parallel execution servers have no work. To discover this type of deviation, use a query similar to the following example:
+
+SELECT dfo_number, tq_id, server_type, process, num_rows
+FROM V$PQ_TQSTAT ORDER BY dfo_number DESC, tq_id, server_type, process;
+The best way to resolve this problem might be to choose a different join method; a nested loop join might be the best option. Alternatively, if one join table is small relative to the other, a BROADCAST distribution method can be hinted using PQ_DISTRIBUTE hint. Note that the optimizer considers the BROADCAST distribution method, but requires OPTIMIZER_FEATURES_ENABLE set to 9.0.2 or higher.
+
+Now, assume that you have a join key with high cardinality, but one value contains most of the data, for example, lava lamp sales by year. The only year that had big sales was 1968, and the parallel execution server for the 1968 records is overwhelmed. You should use the same corrective actions as described in the previous paragraph.
+
+The V$PQ_TQSTAT view provides a detailed report of message traffic at the table queue level. V$PQ_TQSTAT data is valid only when queried from a session that is executing parallel SQL statements. A table queue is the pipeline between query server groups, between the parallel execution coordinator and a query server group, or between a query server group and the coordinator. The table queues are represented explicitly in the operation column by PX SEND <partitioning type> (for example, PX SEND HASH) and PX RECEIVE. For backward compatibility, the row labels of PARALLEL_TO_PARALLEL, SERIAL_TO_PARALLEL, or PARALLEL_TO_SERIAL continue to have the same semantics as previous releases and can be used as before to deduce the table queue allocation. In addition, the top of the parallel execution plan is marked by a new node with operation PX COORDINATOR.
+
+V$PQ_TQSTAT has a row for each query server process that it reads from or writes to in each table queue. A table queue connecting 10 consumer processes to 10 producer processes has 20 rows in the view. Total the bytes column and group by TQ_ID, and the table queue identifier, to obtain the total number of bytes sent through each table queue. Compare this to the optimizer estimates; large variations might indicate a need to analyze the data using a larger sample.
+
+Compute the variance of bytes grouped by TQ_ID. Large variances indicate workload imbalances. You should investigate large variances to determine whether the producers start out with unequal distributions of data, or whether the distribution itself is skewed. If the data itself is skewed, this might indicate a low cardinality, or low number of distinct values.
+
+V$RSRC_CONS_GROUP_HISTORY
+The V$RSRC_CONS_GROUP_HISTORY view displays a history of consumer group statistics for each entry in V$RSRC_PLAN_HISTORY that has a non-NULL plan, including information about parallel statement queuing.
+
+V$RSRC_CONSUMER_GROUP
+The V$RSRC_CONSUMER_GROUP view displays data related to currently active resource consumer groups, including information about parallel statements.
+
+V$RSRC_PLAN
+The V$RSRC_PLAN view displays the names of all currently active resource plans, including the state of parallel statement queuing.
+
+V$RSRC_PLAN_HISTORY
+The V$RSRC_PLAN_HISTORY displays a history of when a resource plan was enabled, disabled, or modified on the instance. The history includes the state of parallel statement queuing
+
+V$RSRC_SESSION_INFO
+The V$RSRC_SESSION_INFO view displays Resource Manager statistics per session, including parallel statement queue statistics.
+
+Monitoring Session Statistics
+These examples use the dynamic performance views described in "Monitoring Parallel Execution Performance with Dynamic Performance Views".
+
+Use GV$PX_SESSION to determine the configuration of the server group executing in parallel. In this example, session 9 is the query coordinator, while sessions 7 and 21 are in the first group, first set. Sessions 18 and 20 are in the first group, second set. The requested and granted DOP for this query is 2, as shown by the output from the following query:
+
+SELECT QCSID, SID,  SERVER_GROUP "Group", SERVER_SET "Set",
+  DEGREE "Degree", REQ_DEGREE "Req Degree"
+FROM V$PX_SESSION ORDER BY QCSID, QCINST_ID, SERVER_GROUP, SERVER_SET;
+Your output should resemble the following:
+
+QCSID      SID        Inst       Group      Set        Degree     Req Degree 
+---------- ---------- ---------- ---------- ---------- ---------- ---------- 
+         9          9          1 
+         9          7          1          1          1          2          2 
+         9         21          1          1          1          2          2 
+         9         18          1          1          2          2          2 
+         9         20          1          1          2          2          2 
+For a single instance, use SELECT FROM V$PX_SESSION and do not include the column name Instance ID.
+
+The processes shown in the output from the previous example using GV$PX_SESSION collaborate to complete the same task. The next example shows the execution of a join query to determine the progress of these processes in terms of physical reads. Use this query to track any specific statistic:
+
+SELECT QCSID, SID, INST_ID "Inst", SERVER_GROUP "Group", SERVER_SET "Set",
+  NAME "Stat Name", VALUE
+FROM GV$PX_SESSTAT A, V$STATNAME B
+WHERE A.STATISTIC# = B.STATISTIC# AND NAME LIKE 'PHYSICAL READS'
+  AND VALUE > 0 ORDER BY QCSID, QCINST_ID, SERVER_GROUP, SERVER_SET;
+Your output should resemble the following:
+
+QCSID  SID   Inst   Group  Set    Stat Name          VALUE      
+------ ----- ------ ------ ------ ------------------ ---------- 
+     9     9      1               physical reads           3863 
+     9     7      1      1      1 physical reads              2 
+     9    21      1      1      1 physical reads              2 
+     9    18      1      1      2 physical reads              2 
+     9    20      1      1      2 physical reads              2 
+Use the previous type of query to track statistics in V$STATNAME. Repeat this query as often as required to observe the progress of the query server processes.
+
+The next query uses V$PX_PROCESS to check the status of the query servers.
+
+SELECT * FROM V$PX_PROCESS;
+Your output should resemble the following:
+
+SERV STATUS    PID    SPID      SID    SERIAL 
+---- --------- ------ --------- ------ ------ 
+P002 IN USE        16     16955     21   7729 
+P003 IN USE        17     16957     20   2921 
+P004 AVAILABLE     18     16959              
+P005 AVAILABLE     19     16962             
+P000 IN USE        12      6999     18   4720 
+P001 IN USE        13      7004      7    234
+Monitoring System Statistics
+The V$SYSSTAT and V$SESSTAT views contain several statistics for monitoring parallel execution. Use these statistics to track the number of parallel queries, DMLs, DDLs, data flow operators (DFOs), and operations. Each query, DML, or DDL can have multiple parallel operations and multiple DFOs.
+
+In addition, statistics also count the number of query operations for which the DOP was reduced, or downgraded, due to either the adaptive multiuser algorithm or the depletion of available parallel execution servers.
+
+Finally, statistics in these views also count the number of messages sent on behalf of parallel execution. The following syntax is an example of how to display these statistics:
+
+SELECT NAME, VALUE FROM GV$SYSSTAT
+WHERE UPPER (NAME) LIKE '%PARALLEL OPERATIONS%'
+OR UPPER (NAME) LIKE '%PARALLELIZED%' OR UPPER (NAME) LIKE '%PX%';
+Your output should resemble the following:
+
+NAME                                               VALUE      
+-------------------------------------------------- ---------- 
+queries parallelized                                      347 
+DML statements parallelized                                 0 
+DDL statements parallelized                                 0 
+DFO trees parallelized                                    463 
+Parallel operations not downgraded                         28 
+Parallel operations downgraded to serial                   31 
+Parallel operations downgraded 75 to 99 pct               252 
+Parallel operations downgraded 50 to 75 pct               128 
+Parallel operations downgraded 25 to 50 pct                43 
+Parallel operations downgraded 1 to 25 pct                 12 
+PX local messages sent                                  74548 
+PX local messages recv'd                                74128 
+PX remote messages sent                                     0 
+PX remote messages recv'd                                   0 
+The following query shows the current wait state of each slave (child process) and query coordinator process on the system:
+
+SELECT px.SID "SID", p.PID, p.SPID "SPID", px.INST_ID "Inst",
+       px.SERVER_GROUP "Group", px.SERVER_SET "Set",
+       px.DEGREE "Degree", px.REQ_DEGREE "Req Degree", w.event "Wait Event"
+FROM GV$SESSION s, GV$PX_SESSION px, GV$PROCESS p, GV$SESSION_WAIT w
+WHERE s.sid (+) = px.sid AND s.inst_id (+) = px.inst_id AND
+      s.sid = w.sid (+) AND s.inst_id = w.inst_id (+) AND
+      s.paddr = p.addr (+) AND s.inst_id = p.inst_id (+)
+ORDER BY DECODE(px.QCINST_ID,  NULL, px.INST_ID,  px.QCINST_ID), px.QCSID, 
+DECODE(px.SERVER_GROUP, NULL, 0, px.SERVER_GROUP), px.SERVER_SET, px.INST_ID;
+Monitoring Operating System Statistics
+There is considerable overlap between information available in Oracle Database and information available though operating system utilities (such as sar and vmstat on UNIX-based systems). Operating systems provide performance statistics on I/O, communication, CPU, memory and paging, scheduling, and synchronization primitives. The V$SESSTAT view provides the major categories of operating system statistics as well.
+
+Typically, operating system information about I/O devices and semaphore operations is harder to map back to database objects and operations than is Oracle Database information. However, some operating systems have good visualization tools and efficient means of collecting the data.
+
+Operating system information about CPU and memory usage is very important for assessing performance. Probably the most important statistic is CPU usage. The goal of low-level performance tuning is to become CPU bound on all CPUs. After this is achieved, you can work at the SQL level to find an alternate plan that might be more I/O intensive but use less CPU.
+
+Operating system memory and paging information is valuable for fine tuning the many system parameters that control how memory is divided among memory-intensive data warehouse subsystems like parallel communication, sort, and hash join.

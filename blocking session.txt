@@ -1,0 +1,80 @@
+
+
+$ df -k .
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/hd1         10485760   7685960   27%    43713     3% /home
+$ hostname
+db4
+
+
+ select * from dba_dml_locks where BLOCKING_OTHERS='BLOCKING';
+
+
+###########blocking session#############################
+
+select 'SID ' || l1.sid ||' is blocking  ' || l2.sid  ||' since '|| l1.ctime
+from    v$lock l1, v$lock l2
+where   l1.block =1 and l2.request > 0
+and     l1.id1=l2.id1
+and     l1.id2=l2.id2
+/   
+
+##############   actie sesion   ############
+
+ select status, count(*) from v$session group by status;
+
+
+##############inactive session oraeder time insc  ###############################
+
+select SID,SERIAL#,USERNAME,STATUS,LAST_CALL_ET from v$session where STATUS<>'ACTIVE'
+order by LAST_CALL_ET;
+
+#########################backup details#####################
+
+alter session set nls_date_format='dd-MON-yy hh24:mi';
+
+
+###################backup details#################################
+col START_TIME for a20
+col end_time for a20
+col STATUS for a10
+col INPUT_TYPE for a10
+select START_TIME,END_TIME,INPUT_BYTES,INPUT_TYPE,STATUS from v$RMAN_BACKUP_JOB_DETAILS where START_TIME > '21-DEC-14';
+
+
+
+select object_name,status from dba_objects where status='INVALID';
+
+	delete noprompt archivelog until time 'sysdate-2' ;
+
+
+####################   kill inactive sesion morethan 120sec
+spool  kill5minprog.sql
+set lines 200 pages 30000
+set feedback off
+set heading off
+select /*+ ORDERED */ '  alter system kill session ''' || s.sid || ',' || s.serial# || ''' immediate;'
+     from v$lock l, v$session s
+      where l.sid = s.sid
+      and s.username = 'MULDMS'
+      and s.status = 'INACTIVE'
+      and s.last_call_et > 300
+       and l.type <> 'TX'
+      AND substr(NVL(s.CLIENT_IDENTIFIER,'X'),1,8) <> 'menucall'
+     AND (s.program LIKE '%frmweb%' or s.program LIKE '%Appsdms%' or s.program LIKE '%appsdms%' or s.program like 'java%');
+spool off
+
+
+
+spool trrkill.sql
+set lines 200 pages 30000
+set feedback off
+set heading off
+Select 'alter system kill session ''' || sid ||',' || serial# || ''' immediate;' from v$session WHERE status='INACTIVE' and last_call_et >300;
+spool off
+
+1912addm9:30
+19addm9
+
+ $ORACLE_HOME/rdbms/admin/addmrpt.sql
+

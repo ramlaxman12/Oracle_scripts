@@ -1,0 +1,87 @@
+https://oracle-base.com/articles/11g/scheduler-enhancements-11gr2
+
+
+
+
+
+CONN / AS SYSDBA
+
+BEGIN
+  DBMS_SCHEDULER.set_scheduler_attribute('email_server', 'smtp.mycompany.com:25');
+  DBMS_SCHEDULER.set_scheduler_attribute('email_sender', 'do_not_reply@mycompany.com');
+END;
+/
+Next we must define a job to associate the notification to. The following job is an empty stub that fires once a minute for 1 hour.
+
+CONN test/test
+
+BEGIN
+  DBMS_SCHEDULER.create_job (
+    job_name        => 'test_notification_job',
+    job_type        => 'PLSQL_BLOCK',
+    job_action      => 'BEGIN NULL; END;',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'freq=minutely; bysecond=0',
+    end_date        => SYSTIMESTAMP + 1/24,
+    enabled         => TRUE);
+END;
+/
+With the job in place we can associate an email notification with it. The following notification fires when the job starts or succeeds. It uses the default subject and body.
+
+BEGIN
+ DBMS_SCHEDULER.add_job_email_notification (
+  job_name   =>  'test_notification_job',
+  recipients =>  'tim@mycompany.com',
+  events     =>  'job_started, job_succeeded');
+END;
+/
+The following notification only fires if a job fails with a "600" error code.
+
+BEGIN
+ DBMS_SCHEDULER.add_job_email_notification (
+  job_name         =>  'test_notification_job',
+  recipients       =>  'tim@mycompany.com',
+  events           =>  'job_failed',
+  filter_condition => ':event.error_code=600');
+END;
+/
+We can see the notification details using the %_SCHEDULER_NOTIFICATIONS views.
+
+SET LINESIZE 100
+COLUMN job_name FORMAT A25
+COLUMN recipient FORMAT A20
+COLUMN filter_condition FORMAT A30
+
+SELECT job_name, recipient, event, filter_condition
+FROM user_scheduler_notifications;
+
+JOB_NAME                  RECIPIENT            EVENT               FILTER_CONDITION
+------------------------- -------------------- ------------------- ------------------------------
+TEST_NOTIFICATION_JOB     tim@mycompany.com    JOB_STARTED
+TEST_NOTIFICATION_JOB     tim@mycompany.com    JOB_SUCCEEDED
+TEST_NOTIFICATION_JOB     tim@mycompany.com    JOB_FAILED          :event.error_code=600
+
+SQL>
+We can use the same view to see the subject and body of the email that will be sent for the specific notification.
+
+COLUMN subject FORMAT A30
+COLUMN body FORMAT A45
+
+SELECT subject, body
+FROM   user_scheduler_notifications
+WHERE  event = 'JOB_STARTED';
+
+SUBJECT                        BODY
+------------------------------ ---------------------------------------------
+Oracle Scheduler Job Notificat Job: %job_owner%.%job_name%.%job_subname%
+ion - %job_owner%.%job_name%.% Event: %event_type%
+job_subname% %event_type%      Date: %event_timestamp%
+                               Log id: %log_id%
+                               Job class: %job_class_name%
+                               Run count: %run_count%
+                               Failure count: %failure_count%
+                               Retry count: %retry_count%
+                               Error code: %error_code%
+                               Error message:
+                               %error_message%
+
